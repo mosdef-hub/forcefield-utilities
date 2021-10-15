@@ -1,0 +1,12 @@
+name: forcefields-dev
+channels:
+  - conda-forge
+dependencies:
+  - bump2version
+  - codecov
+  - foyer
+  - pytest
+  - pre-commit
+  - pip
+  - pydantic
+  - lxml
