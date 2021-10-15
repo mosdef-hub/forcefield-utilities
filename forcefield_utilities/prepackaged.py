@@ -14,3 +14,7 @@ def get_foyer_forcefield(filename):
 
 class FoyerFFs:
     oplsaa = get_foyer_forcefield("oplsaa.xml")
+
+
+if __name__ == "__main__":
+    print(FoyerFFs.oplsaa.children)

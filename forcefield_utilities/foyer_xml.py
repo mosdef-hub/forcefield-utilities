@@ -1,9 +1,19 @@
+from functools import wraps
 from typing import ClassVar, List, Optional, Set
 
-from lxml.etree import ElementTree
 from pydantic import BaseModel, Field
 
 __all__ = ["ForceField"]
+
+loaders = {}
+
+
+class registers_loader:
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, child_class):
+        loaders[self.name] = child_class
 
 
 class FoyerXMLTag(BaseModel):
@@ -60,28 +70,7 @@ class Type(FoyerXMLAtomType):
     doi: Optional[str] = Field(default=None, alias="doi", description="The doi")
 
 
-class Bond(ForceFieldChild):
-    class1: Optional[str] = Field(
-        default=None, description="Class 1 of the bond", alias="class1"
-    )
-
-    class2: Optional[str] = Field(
-        default=None, description="Class 2 of the bond", alias="class2"
-    )
-
-    type1: Optional[str] = Field(
-        default=None, description="Type 1 of the bond", alias="class2"
-    )
-
-    type2: Optional[str] = Field(
-        default=None, description="Type 2 of the bond", alias="type2"
-    )
-
-    length: Optional[float] = Field(
-        default=None, description="The length of the bond", alias="length"
-    )
-
-
+@registers_loader(name="AtomTypes")
 class AtomTypes(ForceFieldChild):
     children: List[Type] = Field(
         ..., description="The AtomType definitions", alias="types"
@@ -96,11 +85,84 @@ class AtomTypes(ForceFieldChild):
         return cls(children=children)
 
 
+class Bond(ForceFieldChild):
+    class1: Optional[str] = Field(
+        default=None, description="Class 1 of the bond", alias="class1"
+    )
+
+    class2: Optional[str] = Field(
+        default=None, description="Class 2 of the bond", alias="class2"
+    )
+
+    type1: Optional[str] = Field(
+        default=None, description="Type 1 of the bond", alias="type1"
+    )
+
+    type2: Optional[str] = Field(
+        default=None, description="Type 2 of the bond", alias="type2"
+    )
+
+    length: float = Field(
+        ..., description="The length of the bond", alias="length"
+    )
+
+    k: float = Field(..., description="The k-value of the bond", alias="k")
+
+
+@registers_loader(name="HarmonicBondForce")
 class HarmonicBondForce(ForceFieldChild):
-    pass
+    children: List[Bond]
+
+    @classmethod
+    def load_from_etree(cls, bonds):
+        children = []
+        for bond_type in bonds.iterchildren():
+            if bond_type.tag == Bond.__name__:
+                children.append(Bond.parse_obj(bond_type.attrib))
+        return cls(children=children)
 
 
-child_mappers = {"AtomTypes": AtomTypes, "HarmonicBondForce": HarmonicBondForce}
+class Angle(ForceFieldChild):
+    class1: Optional[str] = Field(
+        default=None, description="Class 1 of the angle", alias="class1"
+    )
+
+    class2: Optional[str] = Field(
+        default=None, description="Class 2 of the angle", alias="class2"
+    )
+
+    class3: Optional[str] = Field(
+        default=None, description="Class 3 of the angle", alias="class3"
+    )
+
+    type1: Optional[str] = Field(
+        default=None, description="Type 1 of the angle", alias="type1"
+    )
+
+    type2: Optional[str] = Field(
+        default=None, description="Type 2 of the angle", alias="type2"
+    )
+
+    type3: Optional[str] = Field(
+        default=None, description="Type 3 of the angle", alias="type3"
+    )
+
+    angle: float = Field(..., description="The angle", alias="angle")
+
+    k: float = Field(..., description="The k-value of angle", alias="k")
+
+
+@registers_loader(name="HarmonicAngleForce")
+class HarmonicAngleForce(ForceFieldChild):
+    children: List[Angle] = []
+
+    @classmethod
+    def load_from_etree(cls, angles):
+        children = []
+        for angle_type in angles.iterchildren():
+            if angle_type.tag == Angle.__name__:
+                children.append(Angle.parse_obj(angle_type.attrib))
+        return cls(children=children)
 
 
 class ForceField(FoyerXMLTag):
@@ -132,6 +194,6 @@ class ForceField(FoyerXMLTag):
         attribs = root.attrib
         children = []
         for el in root.iterchildren():
-            if el.tag in child_mappers:
-                children.append(child_mappers[el.tag].load_from_etree(el))
+            if el.tag in loaders:
+                children.append(loaders[el.tag].load_from_etree(el))
         return cls(children=children, **attribs)
