@@ -10,3 +10,5 @@ dependencies:
   - pip
   - pydantic
   - lxml
+  - pip:
+      - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
