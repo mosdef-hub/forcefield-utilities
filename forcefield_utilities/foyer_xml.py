@@ -255,6 +255,17 @@ class PeriodicDihedral(Dihedral):
         ..., description="Phase 1, 2, 3 ...", alias="phase"
     )
 
+    def xml_dict(self):
+        max_count = len(self.periodicity)
+        xml_dict = {}
+
+        for j in range(1, max_count + 1):
+            xml_dict[f"periodicity{j}"] = self.periodicity[j - 1]
+            xml_dict[f"phase{j}"] = self.phase[j - 1]
+            xml_dict[f"k{j}"] = self.k[j - 1]
+
+        return xml_dict
+
     @staticmethod
     def periodic_attribs_to_list(attrib):
         max_periodicity = 1
@@ -272,6 +283,15 @@ class PeriodicDihedral(Dihedral):
             attrib_dict["periodicity"].append(attrib[f"periodicity{j}"])
             attrib_dict["phase"].append(attrib[f"phase{j}"])
             attrib_dict["k"].append(attrib[f"k{j}"])
+
+        for key in attrib:
+            if not (
+                key.startswith("periodicity")
+                or key.startswith("phase")
+                or key.startswith("k")
+            ):
+                attrib_dict[key] = attrib[key]
+
         return attrib_dict
 
     @classmethod

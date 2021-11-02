@@ -8,6 +8,10 @@ class BaseTest:
         return foyer.forcefields.load_OPLSAA()
 
     @pytest.fixture(scope="session")
+    def gaff_foyer(self):
+        return foyer.forcefields.load_GAFF()
+
+    @pytest.fixture(scope="session")
     def missing_atom_classes_oplsaa(self):
         return {
             "NZ",
