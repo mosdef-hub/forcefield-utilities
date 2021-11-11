@@ -1,10 +1,26 @@
+import functools
 import re
 import warnings
-from typing import Any, List, Optional, Set, Union
+from typing import Any, ClassVar, List, Optional, Set, Union
 
+from gmso.core.angle_type import AngleType
+from gmso.core.atom_type import AtomType
+from gmso.core.bond_type import BondType
+from gmso.core.dihedral_type import DihedralType
+from gmso.core.forcefield import ForceField as GMSOForceField
+from gmso.core.improper_type import ImproperType
+from gmso.lib.potential_templates import (
+    PotentialTemplate,
+    PotentialTemplateLibrary,
+)
+from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from pydantic import BaseModel, Field
 
+from forcefield_utilities.parameters_transformer import ParametersTransformer
+
 __all__ = ["ForceField"]
+
+GMSO_FF_WILDCARD = "*"
 
 loaders = {}
 
@@ -14,7 +30,9 @@ class registers_loader:
         self.name = name
 
     def __call__(self, child_class):
+        functools.update_wrapper(self, child_class)
         loaders[self.name] = child_class
+        return child_class
 
 
 class FoyerXMLTag(BaseModel):
@@ -109,10 +127,35 @@ class Bond(ForceFieldChild):
 
     k: float = Field(..., description="The k-value of the bond", alias="k")
 
+    def parameters(self):
+        return self.dict(include={"length", "k"})
+
 
 @registers_loader(name="HarmonicBondForce")
 class HarmonicBondForce(ForceFieldChild):
+    gmso_template: ClassVar[str] = "HarmonicBondPotential"
+
     children: List[Bond]
+
+    def to_gmso_potentials(self, children):
+        template = PotentialTemplateLibrary()[self.gmso_template]
+        potentials = {"bond_types": {}}
+        for child in self.children:
+            parameters = ParametersTransformer.transform(
+                self.gmso_template, child.parameters()
+            )
+            gmso_bond_type = BondType.from_template(template, parameters)
+
+            if child.class1 and child.class2:
+                gmso_bond_type.member_classes = [child.class1, child.class2]
+                key = FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_classes)
+            else:
+                gmso_bond_type.member_types = [child.type1, child.type2]
+                key = FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_types)
+
+            potentials["bond_types"][key] = gmso_bond_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, bonds):
@@ -152,9 +195,14 @@ class Angle(ForceFieldChild):
 
     k: float = Field(..., description="The k-value of angle", alias="k")
 
+    def parameters(self):
+        return self.dict(include={"angle", "k"})
+
 
 @registers_loader(name="HarmonicAngleForce")
 class HarmonicAngleForce(ForceFieldChild):
+    gmso_template: ClassVar[str] = "HarmonicAnglePotential"
+
     children: List[Angle] = []
 
     @classmethod
@@ -164,6 +212,35 @@ class HarmonicAngleForce(ForceFieldChild):
             if angle_type.tag == Angle.__name__:
                 children.append(Angle.parse_obj(angle_type.attrib))
         return cls(children=children)
+
+    def to_gmso_potentials(self, children):
+        template = PotentialTemplateLibrary()[self.gmso_template]
+        attr = "angle_types"
+        potentials = {"angle_types": {}}
+        for child in self.children:
+            parameters = ParametersTransformer.transform(
+                self.gmso_template, child.parameters()
+            )
+            gmso_angle_type = AngleType.from_template(template, parameters)
+
+            if child.class1 and child.class2 and child.class3:
+                gmso_angle_type.member_classes = [
+                    child.class1,
+                    child.class2,
+                    child.class3,
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_classes)
+            else:
+                gmso_angle_type.member_types = [
+                    child.type1,
+                    child.type2,
+                    child.type3,
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_types)
+
+            potentials["angle_types"][key] = gmso_angle_type
+
+        return potentials
 
 
 class Dihedral(ForceFieldChild):
@@ -213,6 +290,9 @@ class RBDihedral(Dihedral):
 
     c5: float = Field(..., description="C5 Parameter", alias="c5")
 
+    def parameters(self):
+        return self.dict(include={"c0", "c1", "c2", "c3", "c4", "c5"})
+
 
 class RBProper(RBDihedral):
     pass
@@ -224,7 +304,48 @@ class RBImproper(RBDihedral):
 
 @registers_loader(name="RBTorsionForce")
 class RBTorsionForce(ForceFieldChild):
+    gmso_template: ClassVar[str] = "RyckaertBellemansTorsionPotential"
+
     children: List[Union[RBProper, RBImproper]]
+
+    def to_gmso_potentials(self, children):
+        template = PotentialTemplateLibrary()[self.gmso_template]
+        potentials = {
+            "dihedral_types": {},
+            "improper_types": {},
+        }
+        count = 0
+        for child in self.children:
+            if isinstance(child, RBProper):
+                Creator = DihedralType
+                potential_dict = potentials["dihedral_types"]
+            else:
+                Creator = ImproperType
+                potential_dict = potentials["improper_types"]
+
+            parameters = ParametersTransformer.transform(
+                self.gmso_template, child.parameters()
+            )
+            gmso_di_im_type = Creator.from_template(template, parameters)
+
+            classes = [child.class1, child.class2, child.class3, child.class4]
+            if any(classes):
+                gmso_di_im_type.member_classes = [
+                    class_ or "*" for class_ in classes
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_classes)
+            else:
+                gmso_di_im_type.member_types = [
+                    child.type1,
+                    child.type2,
+                    child.type3,
+                    child.type4,
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_types)
+
+            potential_dict[key] = gmso_di_im_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, torsions):
@@ -266,6 +387,9 @@ class PeriodicDihedral(Dihedral):
 
         return xml_dict
 
+    def parameters(self):
+        return self.dict(include={"periodicity", "phase", "k"})
+
     @staticmethod
     def periodic_attribs_to_list(attrib):
         max_periodicity = 1
@@ -301,15 +425,17 @@ class PeriodicDihedral(Dihedral):
 
 
 class PeriodicProper(PeriodicDihedral):
-    pass
+    gmso_template: ClassVar[str] = "PeriodicTorsionPotential"
 
 
 class PeriodicImproper(PeriodicDihedral):
-    pass
+    gmso_template: ClassVar[str] = "PeriodicImproperPotential"
 
 
 @registers_loader(name="PeriodicTorsionForce")
 class PeriodicTorsionForce(ForceFieldChild):
+    gmso_template: ClassVar[str] = "PeriodicTorsionPotential"
+
     children: List[PeriodicDihedral]
 
     @classmethod
@@ -329,6 +455,45 @@ class PeriodicTorsionForce(ForceFieldChild):
 
         return cls(children=children)
 
+    def to_gmso_potentials(self, children):
+        template = PotentialTemplateLibrary()[self.gmso_template]
+        potentials = {
+            "dihedral_types": {},
+            "improper_types": {},
+        }
+        count = 0
+        for child in self.children:
+            if isinstance(child, PeriodicProper):
+                Creator = DihedralType
+                potential_dict = potentials["dihedral_types"]
+            else:
+                Creator = ImproperType
+                potential_dict = potentials["improper_types"]
+
+            parameters = ParametersTransformer.transform(
+                self.gmso_template, child.parameters()
+            )
+            gmso_di_im_type = Creator.from_template(template, parameters)
+
+            classes = [child.class1, child.class2, child.class3, child.class4]
+            if any(classes):
+                gmso_di_im_type.member_classes = [
+                    class_ or "*" for class_ in classes
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_classes)
+            else:
+                gmso_di_im_type.member_types = [
+                    child.type1,
+                    child.type2,
+                    child.type3,
+                    child.type4,
+                ]
+                key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_types)
+
+            potential_dict[key] = gmso_di_im_type
+
+        return potentials
+
 
 class NonBondedAtom(ForceFieldChild):
     atom_type: str = Field(
@@ -345,12 +510,55 @@ class NonBondedAtom(ForceFieldChild):
         ..., alias="epsilon", description="The epsilon parameter"
     )
 
+    def parameters(self):
+        return self.dict(include={"charge", "sigma", "epsilon"})
+
 
 @registers_loader(name="NonbondedForce")
 class NonBondedForce(ForceFieldChild):
+    gmso_template: ClassVar[str] = "LennardJonesPotential"
     children: List[NonBondedAtom]
     coulomb14scale: Optional[float] = None
     lj14scale: Optional[float] = None
+
+    def to_gmso_potentials(self, children):
+        template = PotentialTemplateLibrary()[self.gmso_template]
+        nonbonded = {"atom_types": {}}
+        foyer_atom_types = list(
+            filter(lambda c: isinstance(c, AtomTypes), children)
+        ).pop()
+        atom_name_to_class_map = {}
+        for type_ in foyer_atom_types.children:
+            atom_name_to_class_map[type_.name] = type_
+
+        for child in self.children:
+            parameters = ParametersTransformer.transform(
+                self.gmso_template, child.parameters()
+            )
+            gmso_atom_type = AtomType.from_template(template, parameters)
+            # ToDO: Add Missing Properties
+            foyer_atomtype = atom_name_to_class_map[child.atom_type]
+            gmso_atom_type.name = foyer_atomtype.name
+            gmso_atom_type.atomclass = foyer_atomtype.atom_class
+
+            # doi, overrides, defintion, description
+            gmso_atom_type.doi = foyer_atomtype.doi
+            gmso_atom_type.overrides = (
+                set(foyer_atomtype.overrides.strip().split(","))
+                if foyer_atomtype.overrides
+                else set()
+            )
+            gmso_atom_type.definition = foyer_atomtype.smarts_def
+            gmso_atom_type.description = foyer_atomtype.desc
+
+            # mass, charge
+            gmso_atom_type.mass = foyer_atomtype.mass
+            gmso_atom_type.charge = child.charge
+            gmso_atom_type.tags = {"element": foyer_atomtype.element}
+
+            nonbonded["atom_types"][child.atom_type] = gmso_atom_type
+
+        return nonbonded
 
     @classmethod
     def load_from_etree(cls, nonbonded_atoms):
@@ -410,3 +618,35 @@ class ForceField(FoyerXMLTag):
                 if type(child) == loaders[children_type]:
                     for type_children in child.children:
                         yield type_children
+
+    def to_gmso_ff(self):
+        ff = GMSOForceField()
+        ff_potentials = {}
+        for child in self.children:
+            if hasattr(child, "gmso_template") and hasattr(
+                child, "to_gmso_potentials"
+            ):
+                potentials = child.to_gmso_potentials(self.children)
+                for attr in potentials:
+                    if attr in ff_potentials:
+                        ff_potentials[attr].update(potentials[attr])
+                    else:
+                        ff_potentials[attr] = potentials[attr]
+
+        for attr in ff_potentials:
+            setattr(ff, attr, ff_potentials[attr])
+        try:
+            nonbonded_force = list(
+                filter(lambda c: isinstance(c, NonBondedForce), self.children)
+            ).pop()
+            ff.scaling_factors = {
+                "electrostatics14Scale": nonbonded_force.coulomb14scale,
+                "nonBonded14Scale": nonbonded_force.lj14scale,
+            }
+        except TypeError:
+            warnings.warn("No nonbonded forces found")
+
+        ff.name = self.name
+        ff.version = self.version
+
+        return ff
