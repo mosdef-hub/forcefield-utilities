@@ -15,9 +15,9 @@ class ParametersTransformer:
         elif name == "HarmonicAnglePotential":
             return ParametersTransformer.transform_harmonic_angle(parameters)
         elif name == "RyckaertBellemansTorsionPotential":
-            return ParametersTransformer.transform_rb_torsions(parameters)
+            return ParametersTransformer.transform_rb_torsion(parameters)
         elif name == "PeriodicTorsionPotential":
-            return ParametersTransformer.transform_periodic_torsions(parameters)
+            return ParametersTransformer.transform_periodic_torsion(parameters)
         else:
             raise TransformationError(
                 f"No transformation is defined for {name}"
@@ -48,7 +48,7 @@ class ParametersTransformer:
         return transformed
 
     @staticmethod
-    def transform_rb_torsions(parameters):
+    def transform_rb_torsion(parameters):
         transformed = {
             "c0": parameters["c0"] * u.kJ / u.mol,
             "c1": parameters["c1"] * u.kJ / u.mol,
@@ -60,7 +60,7 @@ class ParametersTransformer:
         return transformed
 
     @staticmethod
-    def transform_periodic_torsions(parameters):
+    def transform_periodic_torsion(parameters):
         transformed = {
             "n": parameters["periodicity"] * u.dimensionless,
             "phi_eq": parameters["phase"] * u.radian,
