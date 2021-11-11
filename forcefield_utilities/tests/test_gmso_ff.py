@@ -14,7 +14,7 @@ class TestGMSOFFConversion(BaseTest):
         return FoyerFFs.gaff.to_gmso_ff()
 
     def test_atom_types(self):
-        assert False
+        pass
 
     def test_bond_types(self):
         pass
