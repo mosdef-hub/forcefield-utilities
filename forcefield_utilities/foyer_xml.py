@@ -314,7 +314,7 @@ class RBTorsionForce(ForceFieldChild):
             "dihedral_types": {},
             "improper_types": {},
         }
-        count = 0
+
         for child in self.children:
             if isinstance(child, RBProper):
                 Creator = DihedralType
