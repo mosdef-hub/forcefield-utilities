@@ -1,5 +1,3 @@
-import os
-
 from setuptools import find_packages, setup
 
 setup(
@@ -8,7 +6,7 @@ setup(
     description="XML Conversion Utilites for MoSDeF ForceFields",
     authors="Umesh Timalsina",
     author_email="umesh.timalsina@vanderbilt.edu",
-    install_requires=["pydantic", "foyer", "lxml"],
+    install_requires=["pydantic", "foyer", "lxml", "gmso"],
     license="Apache-2.0",
     packages=find_packages(),
     zip_safe=True,
