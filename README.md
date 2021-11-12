@@ -1,5 +1,6 @@
-# forcefield-utilities
-This repository contains utility functions and classes necessary to convert forcefields from foyer to gmso.
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/mosdef-hub/forcefield-utilities/main.svg)](https://results.pre-commit.ci/latest/github/mosdef-hub/forcefield-utilities/main)
 
-## Warning
-Fairly new package (i.e. experimental and can never manifest fully). Previously the plan was to contribute it as a PR to `gmso`. However, for testing and modular development (huge file changes, inherently buggy process), I chose this route.
+[![test](https://github.com/mosdef-hub/forcefield-utilities/actions/workflows/CI.yaml/badge.svg)](https://github.com/mosdef-hub/forcefield-utilities/actions/workflows/CI.yaml)
+
+# forcefield-utilities
+This repository contains utility functions and classes necessary to convert forcefields from `foyer` to `gmso`.

@@ -8,6 +8,7 @@ dependencies:
   - pytest
   - pre-commit
   - pip
+  - gmso
   - pydantic
   - lxml
   - pip:
