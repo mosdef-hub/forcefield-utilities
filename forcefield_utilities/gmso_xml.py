@@ -1,5 +1,10 @@
+import pathlib
 from typing import List, Optional, Union
 
+import unyt as u
+from gmso import ForceField as GMSOForceField
+from gmso.core.atom_type import AtomType as GMSOAtomType
+from lxml.etree import Element
 from pydantic import BaseModel, Field
 
 
@@ -112,6 +117,18 @@ class AtomType(GMSOXMLTag):
         ..., description="The parameters and their values", alias="children"
     )
 
+    def parameters(self, units=None):
+        params = self.children[0]
+        params_dict = {}
+        for parameter in params.children:
+            if units is None:
+                params_dict[parameter.name] = parameter.value
+            else:
+                params_dict[parameter.name] = parameter.value * u.Unit(
+                    units[parameter.name]
+                )
+        return params_dict
+
     @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
@@ -136,6 +153,32 @@ class AtomTypes(GMSOXMLChild):
     children: List[Union[ParametersUnitDef, AtomType]] = Field(
         ..., description="The children of AtomTypes", alias="parameters"
     )
+
+    def to_gmso_potentials(self):
+        potentials = {"atom_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: parameter_unit.unit
+            for parameter_unit in parameters_units
+        }
+
+        for atom_type in filter(
+            lambda c: isinstance(c, AtomType), self.children
+        ):
+            atom_type_dict = atom_type.dict(
+                by_alias=True,
+                exclude={"children", "element"},
+                exclude_none=True,
+            )
+            if not "expression" in atom_type_dict:
+                atom_type_dict["expression"] = self.expression
+            atom_type_dict["parameters"] = atom_type.parameters(units)
+            potentials["atom_types"][atom_type.name] = GMSOAtomType(
+                **atom_type_dict
+            )
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):
@@ -425,11 +468,11 @@ class PairPotentialType(GMSOXMLTag):
         attribs = root.attrib
         children = []
         for el in root.iterchildren():
-            children.append(Parameter.load_from_etree(el))
+            children.append(Parameters.load_from_etree(el))
         return cls(children=children, **attribs)
 
 
-class PairPotentialTypes:
+class PairPotentialTypes(GMSOXMLChild):
     name: Optional[str] = Field(
         None,
         description="The name of this pair potential types group",
@@ -446,7 +489,7 @@ class PairPotentialTypes:
         ..., description="The children", alias="children"
     )
 
-    @staticmethod
+    @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
         children = []
@@ -494,6 +537,12 @@ class FFMetaData(GMSOXMLChild):
             children.append(Units.load_from_etree(unit))
         return cls(children=children, **attribs)
 
+    def gmso_scaling_factors(self):
+        return self.dict(
+            include={"electrostatic_14_scale", "nonbonded_14_scale"},
+            exclude_none=True,
+        )
+
 
 class ForceField(GMSOXMLTag):
     name: str = Field(
@@ -507,6 +556,34 @@ class ForceField(GMSOXMLTag):
     children: List[GMSOXMLChild] = Field(
         ..., description="The children tags", alias="children"
     )
+
+    def to_gmso_ff(self):
+        ff = GMSOForceField()
+        ff.name = self.name
+        ff.version = self.version
+        metadata = list(
+            filter(lambda child: isinstance(child, FFMetaData), self.children)
+        ).pop()
+        ff.scaling_factors = metadata.gmso_scaling_factors()
+        remaining_children = filter(
+            lambda child: not isinstance(child, (FFMetaData, Units)),
+            self.children,
+        )
+        ff_potentials = {}
+
+        for child in remaining_children:
+            potentials = child.to_gmso_potentials()
+            for attr in potentials:
+                if attr in ff_potentials:
+                    ff_potentials[attr].update(potentials[attr])
+                else:
+                    ff_potentials[attr] = potentials[attr]
+            break
+
+        for attr in ff_potentials:
+            setattr(ff, attr, ff_potentials[attr])
+
+        return ff
 
     @classmethod
     def load_from_etree(cls, root) -> "ForceField":
@@ -525,4 +602,6 @@ class ForceField(GMSOXMLTag):
                 children.append(DihedralTypes.load_from_etree(el))
             elif el.tag == "ImproperTypes":
                 children.append(ImproperTypes.load_from_etree(el))
+            elif el.tag == "PairPotentialTypes":
+                children.append(PairPotentialTypes.load_from_etree(el))
         return cls(children=children, **attribs)
