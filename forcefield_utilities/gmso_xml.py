@@ -124,8 +124,8 @@ class AtomType(GMSOXMLTag):
             if units is None:
                 params_dict[parameter.name] = parameter.value
             else:
-                params_dict[parameter.name] = parameter.value * u.Unit(
-                    units[parameter.name]
+                params_dict[parameter.name] = (
+                    parameter.value * units[parameter.name]
                 )
         return params_dict
 
@@ -154,13 +154,13 @@ class AtomTypes(GMSOXMLChild):
         ..., description="The children of AtomTypes", alias="parameters"
     )
 
-    def to_gmso_potentials(self):
+    def to_gmso_potentials(self, default_units):
         potentials = {"atom_types": {}}
         parameters_units = filter(
             lambda c: isinstance(c, ParametersUnitDef), self.children
         )
         units = {
-            parameter_unit.parameter: parameter_unit.unit
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
             for parameter_unit in parameters_units
         }
 
@@ -175,9 +175,21 @@ class AtomTypes(GMSOXMLChild):
             if not "expression" in atom_type_dict:
                 atom_type_dict["expression"] = self.expression
             atom_type_dict["parameters"] = atom_type.parameters(units)
-            potentials["atom_types"][atom_type.name] = GMSOAtomType(
-                **atom_type_dict
-            )
+
+            if default_units.get("charge") and atom_type_dict.get("charge"):
+                atom_type_dict["charge"] = (
+                    atom_type_dict["charge"] * default_units["charge"]
+                )
+
+            if default_units.get("mass") and atom_type_dict.get("mass"):
+                atom_type_dict["mass"] = (
+                    atom_type_dict["mass"] * default_units["mass"]
+                )
+            gmso_atom_type = GMSOAtomType(**atom_type_dict)
+            element = atom_type.element
+            if element:
+                gmso_atom_type.add_tag("element", element)
+            potentials["atom_types"][atom_type.name] = gmso_atom_type
         return potentials
 
     @classmethod
@@ -543,6 +555,17 @@ class FFMetaData(GMSOXMLChild):
             exclude_none=True,
         )
 
+    def get_default_units(self):
+        units_dict = {}
+        units = self.children[0].dict(by_alias=True, exclude_none=True)
+        for name, unit in units.items():
+            try:
+                units_dict[name] = u.Unit(unit)
+            except u.exceptions.UnitParseError:
+                units_dict[name] = getattr(u.physical_constants, unit)
+
+        return units_dict
+
 
 class ForceField(GMSOXMLTag):
     name: str = Field(
@@ -564,6 +587,7 @@ class ForceField(GMSOXMLTag):
         metadata = list(
             filter(lambda child: isinstance(child, FFMetaData), self.children)
         ).pop()
+        default_units = metadata.get_default_units()
         ff.scaling_factors = metadata.gmso_scaling_factors()
         remaining_children = filter(
             lambda child: not isinstance(child, (FFMetaData, Units)),
@@ -572,14 +596,13 @@ class ForceField(GMSOXMLTag):
         ff_potentials = {}
 
         for child in remaining_children:
-            potentials = child.to_gmso_potentials()
+            potentials = child.to_gmso_potentials(default_units)
             for attr in potentials:
                 if attr in ff_potentials:
                     ff_potentials[attr].update(potentials[attr])
                 else:
                     ff_potentials[attr] = potentials[attr]
             break
-
         for attr in ff_potentials:
             setattr(ff, attr, ff_potentials[attr])
 
