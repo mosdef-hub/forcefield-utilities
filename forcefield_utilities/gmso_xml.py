@@ -182,6 +182,11 @@ class AtomTypes(GMSOXMLChild):
                 atom_type_dict["expression"] = self.expression
             atom_type_dict["parameters"] = atom_type.parameters(units)
 
+            if not atom_type_dict.get("independent_variables"):
+                atom_type_dict["independent_variables"] = sympy.sympify(
+                    atom_type_dict["expression"]
+                ).free_variables - set(atom_type_dict["parameters"].keys())
+
             if default_units.get("charge") and atom_type_dict.get("charge"):
                 atom_type_dict["charge"] = (
                     atom_type_dict["charge"] * default_units["charge"]
