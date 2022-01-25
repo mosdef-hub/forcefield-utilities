@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 import unyt as u
 from gmso import ForceField as GMSOForceField
+from gmso.core.angle_type import AngleType as GMSOAngleType
 from gmso.core.atom_type import AtomType as GMSOAtomType
 from gmso.core.bond_type import BondType as GMSOBondType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
@@ -11,6 +12,18 @@ from pydantic import BaseModel, Field
 
 
 class GMSOXMLTag(BaseModel):
+    def parameters(self, units=None):
+        params = self.children[0]
+        params_dict = {}
+        for parameter in params.children:
+            if units is None:
+                params_dict[parameter.name] = parameter.value
+            else:
+                params_dict[parameter.name] = (
+                    parameter.value * units[parameter.name]
+                )
+        return params_dict
+
     class Config:
         arbitrary_types_allowed = True
         allow_population_by_field_name = True
@@ -118,18 +131,6 @@ class AtomType(GMSOXMLTag):
     children: List[Parameters] = Field(
         ..., description="The parameters and their values", alias="children"
     )
-
-    def parameters(self, units=None):
-        params = self.children[0]
-        params_dict = {}
-        for parameter in params.children:
-            if units is None:
-                params_dict[parameter.name] = parameter.value
-            else:
-                params_dict[parameter.name] = (
-                    parameter.value * units[parameter.name]
-                )
-        return params_dict
 
     @classmethod
     def load_from_etree(cls, root):
@@ -240,18 +241,6 @@ class BondType(GMSOXMLTag):
                 children.append(Parameters.load_from_etree(el))
         return cls(children=children, **root.attrib)
 
-    def parameters(self, units=None):
-        params = self.children[0]
-        params_dict = {}
-        for parameter in params.children:
-            if units is None:
-                params_dict[parameter.name] = parameter.value
-            else:
-                params_dict[parameter.name] = (
-                    parameter.value * units[parameter.name]
-                )
-        return params_dict
-
 
 class BondTypes(GMSOXMLChild):
     name: Optional[str] = Field(
@@ -275,7 +264,7 @@ class BondTypes(GMSOXMLChild):
             parameter_unit.parameter: u.Unit(parameter_unit.unit)
             for parameter_unit in parameters_units
         }
-        print(self.children)
+
         for bond_type in filter(
             lambda c: isinstance(c, BondType), self.children
         ):
@@ -381,6 +370,64 @@ class AngleTypes(GMSOXMLChild):
     children: List[Union[ParametersUnitDef, AngleType]] = Field(
         ..., description="Children of this angle types tag", alias="children"
     )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"angle_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for angle_type in filter(
+            lambda c: isinstance(c, AngleType), self.children
+        ):
+            angle_type_dict = angle_type.dict(
+                by_alias=True,
+                exclude={
+                    "children",
+                    "type1",
+                    "type2",
+                    "type3",
+                    "class1",
+                    "class2",
+                    "class3",
+                },
+                exclude_none=True,
+            )
+
+            if "expression" not in angle_type_dict:
+                angle_type_dict["expression"] = self.expression
+
+            if angle_type.type1 and angle_type.type2 and angle_type.type3:
+                angle_type_dict["member_types"] = (
+                    angle_type.type1,
+                    angle_type.type2,
+                    angle_type.type3,
+                )
+
+            elif angle_type.class1 and angle_type.class2 and angle_type.class3:
+                angle_type_dict["member_classes"] = (
+                    angle_type.class1,
+                    angle_type.class2,
+                    angle_type.class3,
+                )
+
+            angle_type_dict["parameters"] = angle_type.parameters(units)
+
+            gmso_angle_type = GMSOAngleType(**angle_type_dict)
+            if gmso_angle_type.member_types:
+                potentials["angle_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_types)
+                ] = gmso_angle_type
+            else:
+                potentials["angle_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_classes)
+                ] = gmso_angle_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):

@@ -39,4 +39,21 @@ class TestGMSOXML(BaseTest):
         assert btype_harmonic_1.name == "BondType-Harmonic-1"
 
     def test_angle_types(self, ff_example_zero):
-        pass
+        angle_type_harmonic_2 = ff_example_zero.angle_types[
+            "opls_144~opls_143~opls_144"
+        ]
+        assert (
+            str(angle_type_harmonic_2.expression)
+            == "0.5*k*(theta - theta_eq)**2"
+        )
+        assert angle_type_harmonic_2.member_types == (
+            "opls_144",
+            "opls_143",
+            "opls_144",
+        )
+        assert angle_type_harmonic_2.parameters == {
+            "k": u.unyt_quantity(292.88, "kJ/(mol*radian**2)"),
+            "theta_eq": u.unyt_quantity(2.0420352248, "radian"),
+        }
+
+        assert angle_type_harmonic_2.name == "AngleType-Harmonic-2"
