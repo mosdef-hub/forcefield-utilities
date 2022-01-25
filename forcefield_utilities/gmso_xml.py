@@ -247,7 +247,7 @@ class BondType(GMSOXMLTag):
         for el in root.iterchildren():
             if el.tag == "Parameters":
                 children.append(Parameters.load_from_etree(el))
-        return cls(children=children, **root.attrib)
+        return cls(children=children, **attribs)
 
 
 class BondTypes(GMSOXMLChild):
