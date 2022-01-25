@@ -26,3 +26,17 @@ class TestGMSOXML(BaseTest):
         assert opls_143.name == "opls_143"
         assert opls_143.charge == -0.23 * u.elementary_charge
         assert opls_143.get_tag("element") == "C"
+
+    def test_bond_types(self, ff_example_zero):
+        btype_harmonic_1 = ff_example_zero.bond_types["opls_143~opls_143"]
+        assert str(btype_harmonic_1.expression) == "0.5*k*(r - r_eq)**2"
+        assert btype_harmonic_1.member_types == ("opls_143", "opls_143")
+        assert btype_harmonic_1.parameters == {
+            "k": u.unyt_quantity(459403.2, "kJ/mol/nm**2"),
+            "r_eq": u.unyt_quantity(0.134, "nm"),
+        }
+
+        assert btype_harmonic_1.name == "BondType-Harmonic-1"
+
+    def test_angle_types(self, ff_example_zero):
+        pass

@@ -4,6 +4,8 @@ from typing import List, Optional, Union
 import unyt as u
 from gmso import ForceField as GMSOForceField
 from gmso.core.atom_type import AtomType as GMSOAtomType
+from gmso.core.bond_type import BondType as GMSOBondType
+from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from lxml.etree import Element
 from pydantic import BaseModel, Field
 
@@ -238,6 +240,18 @@ class BondType(GMSOXMLTag):
                 children.append(Parameters.load_from_etree(el))
         return cls(children=children, **root.attrib)
 
+    def parameters(self, units=None):
+        params = self.children[0]
+        params_dict = {}
+        for parameter in params.children:
+            if units is None:
+                params_dict[parameter.name] = parameter.value
+            else:
+                params_dict[parameter.name] = (
+                    parameter.value * units[parameter.name]
+                )
+        return params_dict
+
 
 class BondTypes(GMSOXMLChild):
     name: Optional[str] = Field(
@@ -251,6 +265,54 @@ class BondTypes(GMSOXMLChild):
     children: List[Union[ParametersUnitDef, BondType]] = Field(
         ..., description="Children of this bond type tag", alias="children"
     )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"bond_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+        print(self.children)
+        for bond_type in filter(
+            lambda c: isinstance(c, BondType), self.children
+        ):
+            bond_type_dict = bond_type.dict(
+                by_alias=True,
+                exclude={"children", "type1", "type2", "class1", "class2"},
+                exclude_none=True,
+            )
+
+            if "expression" not in bond_type_dict:
+                bond_type_dict["expression"] = self.expression
+
+            if bond_type.type1 and bond_type.type2:
+                bond_type_dict["member_types"] = (
+                    bond_type.type1,
+                    bond_type.type2,
+                )
+
+            elif bond_type.class1 and bond_type.class2:
+                bond_type_dict["member_classes"] = (
+                    bond_type.class1,
+                    bond_type.class2,
+                )
+
+            bond_type_dict["parameters"] = bond_type.parameters(units)
+
+            gmso_bond_type = GMSOBondType(**bond_type_dict)
+            if gmso_bond_type.member_types:
+                potentials["bond_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_types)
+                ] = gmso_bond_type
+            else:
+                potentials["bond_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_classes)
+                ] = gmso_bond_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):
@@ -596,13 +658,14 @@ class ForceField(GMSOXMLTag):
         ff_potentials = {}
 
         for child in remaining_children:
-            potentials = child.to_gmso_potentials(default_units)
-            for attr in potentials:
-                if attr in ff_potentials:
-                    ff_potentials[attr].update(potentials[attr])
-                else:
-                    ff_potentials[attr] = potentials[attr]
-            break
+            if hasattr(child, "to_gmso_potentials"):
+                potentials = child.to_gmso_potentials(default_units)
+                for attr in potentials:
+                    if attr in ff_potentials:
+                        ff_potentials[attr].update(potentials[attr])
+                    else:
+                        ff_potentials[attr] = potentials[attr]
+
         for attr in ff_potentials:
             setattr(ff, attr, ff_potentials[attr])
 
