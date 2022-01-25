@@ -57,3 +57,33 @@ class TestGMSOXML(BaseTest):
         }
 
         assert angle_type_harmonic_2.name == "AngleType-Harmonic-2"
+
+    def test_dihedral_types(self, ff_example_zero):
+        dihedral_type_rb_1 = ff_example_zero.dihedral_types[
+            "opls_144~opls_143~opls_143~opls_144"
+        ]
+
+        assert (
+            str(dihedral_type_rb_1.expression)
+            == "c_0 + c_1*cos(psi) + c_2*cos(psi)**2 + c_3*cos(psi)**3 + c_4*cos(psi)**4 + c_5*cos(psi)**5"
+        )
+        assert dihedral_type_rb_1.member_types == (
+            "opls_144",
+            "opls_143",
+            "opls_143",
+            "opls_144",
+        )
+
+        assert dihedral_type_rb_1.parameters == {
+            "c_0": u.unyt_quantity(58.576, "kJ/mol"),
+            "c_1": u.unyt_quantity(0.0, "kJ/mol"),
+            "c_2": u.unyt_quantity(-58.576, "kJ/mol"),
+            "c_3": u.unyt_quantity(0.0, "kJ/mol"),
+            "c_4": u.unyt_quantity(0.0, "kJ/mol"),
+            "c_5": u.unyt_quantity(0.0, "kJ/mol"),
+        }
+
+        assert dihedral_type_rb_1.name == "DihedralType-RyckaertBellemans-1"
+
+    def test_improper_types(self, ff_example_zero):
+        pass

@@ -1,11 +1,14 @@
 import pathlib
-from typing import List, Optional, Union
+from typing import List, Optional, Set, Union
 
+import sympy
 import unyt as u
 from gmso import ForceField as GMSOForceField
 from gmso.core.angle_type import AngleType as GMSOAngleType
 from gmso.core.atom_type import AtomType as GMSOAtomType
 from gmso.core.bond_type import BondType as GMSOBondType
+from gmso.core.dihedral_type import DihedralType as GMSODihedralType
+from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from lxml.etree import Element
 from pydantic import BaseModel, Field
@@ -290,6 +293,9 @@ class BondTypes(GMSOXMLChild):
                 )
 
             bond_type_dict["parameters"] = bond_type.parameters(units)
+            bond_type_dict["independent_variables"] = sympy.sympify(
+                bond_type_dict["expression"]
+            ).free_symbols - set(bond_type_dict["parameters"].keys())
 
             gmso_bond_type = GMSOBondType(**bond_type_dict)
             if gmso_bond_type.member_types:
@@ -416,6 +422,9 @@ class AngleTypes(GMSOXMLChild):
                 )
 
             angle_type_dict["parameters"] = angle_type.parameters(units)
+            angle_type_dict["independent_variables"] = sympy.sympify(
+                angle_type_dict["expression"]
+            ).free_symbols - set(angle_type_dict["parameters"].keys())
 
             gmso_angle_type = GMSOAngleType(**angle_type_dict)
             if gmso_angle_type.member_types:
@@ -490,8 +499,8 @@ class TorsionType(GMSOXMLTag):
 
     type4: Optional[str] = Field(
         None,
-        description="Type 3 for this Dihedral/Improper type",
-        alias="type3",
+        description="Type 4 for this Dihedral/Improper type",
+        alias="type4",
     )
 
     children: List[Parameters] = Field(
@@ -530,6 +539,86 @@ class TorsionTypes(GMSOXMLChild):
         description="Children of this dihedral/improper types tag",
         alias="children",
     )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"dihedral_types": {}, "improper_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for torsion_type in filter(
+            lambda c: isinstance(c, (DihedralType, ImproperType)), self.children
+        ):
+            torsion_dict = torsion_type.dict(
+                by_alias=True,
+                exclude={
+                    "children",
+                    "type1",
+                    "type2",
+                    "type3",
+                    "type4",
+                    "class1",
+                    "class2",
+                    "class3",
+                    "class4",
+                },
+                exclude_none=True,
+            )
+
+            if "expression" not in torsion_dict:
+                torsion_dict["expression"] = self.expression
+
+            if (
+                torsion_type.type1
+                and torsion_type.type2
+                and torsion_type.type3
+                and torsion_type.type4
+            ):
+                torsion_dict["member_types"] = (
+                    torsion_type.type1,
+                    torsion_type.type2,
+                    torsion_type.type3,
+                    torsion_type.type4,
+                )
+
+            elif (
+                torsion_type.class1
+                and torsion_type.class2
+                and torsion_type.class3
+                and torsion_type.class4
+            ):
+                torsion_dict["member_classes"] = (
+                    torsion_type.class1,
+                    torsion_type.class2,
+                    torsion_type.class3,
+                    torsion_type.class4,
+                )
+
+            torsion_dict["parameters"] = torsion_type.parameters(units)
+            torsion_dict["independent_variables"] = sympy.sympify(
+                torsion_dict["expression"]
+            ).free_symbols - set(torsion_dict["parameters"].keys())
+            if isinstance(torsion_type, DihedralType):
+                gmso_torsion_type = GMSODihedralType(**torsion_dict)
+                key = "dihedral_types"
+            else:
+                gmso_torsion_type = GMSOImproperType(**torsion_dict)
+                key = "improper_types"
+
+            if gmso_torsion_type.member_types:
+                potentials[key][
+                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_types)
+                ] = gmso_torsion_type
+            else:
+                potentials[key][
+                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_classes)
+                ] = gmso_torsion_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):
