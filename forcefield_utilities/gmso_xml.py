@@ -185,7 +185,7 @@ class AtomTypes(GMSOXMLChild):
             if not atom_type_dict.get("independent_variables"):
                 atom_type_dict["independent_variables"] = sympy.sympify(
                     atom_type_dict["expression"]
-                ).free_variables - set(atom_type_dict["parameters"].keys())
+                ).free_symbols - set(atom_type_dict["parameters"].keys())
 
             if default_units.get("charge") and atom_type_dict.get("charge"):
                 atom_type_dict["charge"] = (
@@ -744,6 +744,8 @@ class FFMetaData(GMSOXMLChild):
 
     nonbonded_14_scale: float = Field(0.5, alias="nonBonded14Scale")
 
+    combining_rule: str = Field("geometric", alias="combiningRule")
+
     @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
@@ -792,8 +794,9 @@ class ForceField(GMSOXMLTag):
         ).pop()
         default_units = metadata.get_default_units()
         ff.scaling_factors = metadata.gmso_scaling_factors()
+        ff.combining_rule = metadata.combining_rule
         remaining_children = filter(
-            lambda child: not isinstance(child, (FFMetaData, Units)),
+            lambda c: not isinstance(c, (FFMetaData, Units)),
             self.children,
         )
         ff_potentials = {}

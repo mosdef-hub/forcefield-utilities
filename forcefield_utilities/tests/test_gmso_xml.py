@@ -20,6 +20,7 @@ class TestGMSOXML(BaseTest):
             "electrostatic_14_scale": 0.5,
             "nonbonded_14_scale": 0.5,
         }
+        assert ff_example_zero.combining_rule == "geometric"
 
     def test_atom_types(self, ff_example_zero):
         opls_143 = ff_example_zero.atom_types["opls_143"]
