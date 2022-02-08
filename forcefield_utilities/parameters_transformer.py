@@ -35,14 +35,14 @@ class ParametersTransformer:
     def transform_harmonic_bond(parameters):
         transformed = {
             "r_eq": parameters["length"] * u.nm,
-            "k": parameters["k"] * u.kJ / (u.nm ** 2),
+            "k": parameters["k"] * u.kJ / (u.nm**2),
         }
         return transformed
 
     @staticmethod
     def transform_harmonic_angle(parameters):
         transformed = {
-            "k": parameters["k"] * u.kJ / (u.radian ** 2),
+            "k": parameters["k"] * u.kJ / (u.radian**2),
             "theta_eq": parameters["angle"] * u.radian,
         }
         return transformed
