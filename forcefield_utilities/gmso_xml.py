@@ -1,4 +1,4 @@
-import pathlib
+from functools import lru_cache
 from typing import List, Optional, Set, Union
 
 import sympy
@@ -10,8 +10,13 @@ from gmso.core.bond_type import BondType as GMSOBondType
 from gmso.core.dihedral_type import DihedralType as GMSODihedralType
 from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
-from lxml.etree import Element
 from pydantic import BaseModel, Field
+
+
+@lru_cache(maxsize=128)
+def indep_vars(expr: str, dependent: frozenset) -> Set:
+    """Given an expression and dependent variables, return independent variables for it."""
+    return sympy.sympify(expr).free_symbols - dependent
 
 
 class GMSOXMLTag(BaseModel):
@@ -183,9 +188,10 @@ class AtomTypes(GMSOXMLChild):
             atom_type_dict["parameters"] = atom_type.parameters(units)
 
             if not atom_type_dict.get("independent_variables"):
-                atom_type_dict["independent_variables"] = sympy.sympify(
-                    atom_type_dict["expression"]
-                ).free_symbols - set(atom_type_dict["parameters"].keys())
+                atom_type_dict["independent_variables"] = indep_vars(
+                    atom_type_dict["expression"],
+                    frozenset(atom_type_dict["parameters"]),
+                )
 
             if default_units.get("charge") and atom_type_dict.get("charge"):
                 atom_type_dict["charge"] = (
@@ -298,9 +304,10 @@ class BondTypes(GMSOXMLChild):
                 )
 
             bond_type_dict["parameters"] = bond_type.parameters(units)
-            bond_type_dict["independent_variables"] = sympy.sympify(
-                bond_type_dict["expression"]
-            ).free_symbols - set(bond_type_dict["parameters"].keys())
+            bond_type_dict["independent_variables"] = indep_vars(
+                bond_type_dict["expression"],
+                frozenset(bond_type_dict["parameters"]),
+            )
 
             gmso_bond_type = GMSOBondType(**bond_type_dict)
             if gmso_bond_type.member_types:
@@ -427,10 +434,10 @@ class AngleTypes(GMSOXMLChild):
                 )
 
             angle_type_dict["parameters"] = angle_type.parameters(units)
-            angle_type_dict["independent_variables"] = sympy.sympify(
-                angle_type_dict["expression"]
-            ).free_symbols - set(angle_type_dict["parameters"].keys())
-
+            angle_type_dict["independent_variables"] = indep_vars(
+                angle_type_dict["expression"],
+                frozenset(angle_type_dict["parameters"]),
+            )
             gmso_angle_type = GMSOAngleType(**angle_type_dict)
             if gmso_angle_type.member_types:
                 potentials["angle_types"][
@@ -604,9 +611,10 @@ class TorsionTypes(GMSOXMLChild):
                 )
 
             torsion_dict["parameters"] = torsion_type.parameters(units)
-            torsion_dict["independent_variables"] = sympy.sympify(
-                torsion_dict["expression"]
-            ).free_symbols - set(torsion_dict["parameters"].keys())
+            torsion_dict["independent_variables"] = indep_vars(
+                torsion_dict["expression"],
+                frozenset(torsion_dict["parameters"]),
+            )
             if isinstance(torsion_type, DihedralType):
                 gmso_torsion_type = GMSODihedralType(**torsion_dict)
                 key = "dihedral_types"
