@@ -48,8 +48,8 @@ def assert_atomtypes_equivalency(parameters_ff, gmso_ff):
         assert atom_type.element == atom_type_gmso.get_tag("element")
         assert np.allclose(atom_type.mass, atom_type_gmso.mass.value)
         if atom_type.overrides:
-            for splited in atom_type.overrides.strip().split(","):
-                assert splited in atom_type_gmso.overrides
+            for splited in atom_type.overrides.split(","):
+                assert splited.strip() in atom_type_gmso.overrides
         else:
             assert atom_type_gmso.overrides == set()
 
