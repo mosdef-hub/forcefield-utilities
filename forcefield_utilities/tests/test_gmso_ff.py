@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 import unyt as u
+from gmso.utils._constants import FF_TOKENS_SEPARATOR
 
 from forcefield_utilities.foyer_xml import AtomTypes, NonBondedForce
 from forcefield_utilities.prepackaged import FoyerFFs
 from forcefield_utilities.tests.base_test import BaseTest
-from gmso.utils._constants import FF_TOKENS_SEPARATOR
 
 parameters_map = {"length": "r_eq", "angle": "theta_eq"}
 
