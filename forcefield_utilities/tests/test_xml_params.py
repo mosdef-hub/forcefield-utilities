@@ -12,7 +12,9 @@ class TestXMLParams(BaseTest):
         ):
             assert atom_type.dict(
                 exclude_none=True, exclude={"atom_type"}
-            ) == oplsaa_foyer.get_parameters(group="atoms", key=atom_type.atom_type)
+            ) == oplsaa_foyer.get_parameters(
+                group="atoms", key=atom_type.atom_type
+            )
 
     def test_bond_types_oplsaa(self, oplsaa_foyer, missing_atom_classes_oplsaa):
         for harmonic_bond in FoyerFFs.get_ff("oplsaa").iterate_on(
@@ -87,10 +89,14 @@ class TestXMLParams(BaseTest):
         reason="Gaff Forcefield not found",
     )
     def test_atomtypes_gaff(self, gaff_foyer):
-        for atom_type in FoyerFFs.gaff.iterate_on(children_type="NonbondedForce"):
+        for atom_type in FoyerFFs.gaff.iterate_on(
+            children_type="NonbondedForce"
+        ):
             assert atom_type.dict(
                 exclude_none=True, exclude={"atom_type"}
-            ) == gaff_foyer.get_parameters(group="atoms", key=atom_type.atom_type)
+            ) == gaff_foyer.get_parameters(
+                group="atoms", key=atom_type.atom_type
+            )
 
     @pytest.mark.skipif(
         condition=not hasattr(FoyerFFs, "gaff"),

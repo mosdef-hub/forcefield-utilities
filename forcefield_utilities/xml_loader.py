@@ -1,6 +1,6 @@
 import importlib
-import pathlib
 import os
+import pathlib
 
 from lxml import etree
 
@@ -59,7 +59,9 @@ def load_xml(xml_name, rel_to_module=False):
 
 def load_oplsaa():
     """Return the foyer Forcefield object for the oplsaa.xml file found in the foyer/forcefields/xml/ directory."""
-    return _get_foyer_forcefield(_get_xml_path("foyer", "forcefields/xml/oplsaa.xml"))
+    return _get_foyer_forcefield(
+        _get_xml_path("foyer", "forcefields/xml/oplsaa.xml")
+    )
 
 
 def load_trappe_ua():

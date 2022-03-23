@@ -4,8 +4,8 @@ import unyt as u
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 
 from forcefield_utilities.foyer_xml import AtomTypes, NonBondedForce
-from forcefield_utilities.xml_loader import FoyerFFs
 from forcefield_utilities.tests.base_test import BaseTest
+from forcefield_utilities.xml_loader import FoyerFFs
 
 parameters_map = {"length": "r_eq", "angle": "theta_eq"}
 
@@ -19,11 +19,13 @@ def assert_atomtypes_equivalency(parameters_ff, gmso_ff):
         filter(lambda c: isinstance(c, AtomTypes), parameters_ff.children)
     ).pop()
     nb_atom_types = {
-        non_bonded.atom_type: non_bonded for non_bonded in non_bonded_forces.children
+        non_bonded.atom_type: non_bonded
+        for non_bonded in non_bonded_forces.children
     }
 
     xml_atom_types = {
-        xml_atom_type.name: xml_atom_type for xml_atom_type in xml_atom_types.children
+        xml_atom_type.name: xml_atom_type
+        for xml_atom_type in xml_atom_types.children
     }
     for atom_type_name in nb_atom_types:
         type_ = nb_atom_types[atom_type_name]
@@ -93,7 +95,9 @@ def assert_forces_equivalency(
                 classes.split(FF_TOKENS_SEPARATOR)
             )
         else:
-            types = FF_TOKENS_SEPARATOR.join(type_ if type_ else "*" for type_ in types)
+            types = FF_TOKENS_SEPARATOR.join(
+                type_ if type_ else "*" for type_ in types
+            )
             try:
                 gmso_potential = gmso_potentials[types]
             except KeyError as e:
@@ -110,7 +114,9 @@ def assert_forces_equivalency(
         btype_params_xml = child.parameters()
         for key in btype_params_xml:
             if key in btype_params:
-                assert np.allclose(btype_params[key].value, btype_params_xml[key])
+                assert np.allclose(
+                    btype_params[key].value, btype_params_xml[key]
+                )
             else:
                 assert key in parameters_map
                 new_key_gmso = parameters_map[key]
@@ -132,12 +138,18 @@ class TestGMSOFFConversionOPLSAA(BaseTest):
 
     def test_angle_types(self, oplsaa_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("oplsaa"), oplsaa_gmso, "HarmonicAngleForce", "angle_types"
+            FoyerFFs.get_ff("oplsaa"),
+            oplsaa_gmso,
+            "HarmonicAngleForce",
+            "angle_types",
         )
 
     def test_dihedral_types(self, oplsaa_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("oplsaa"), oplsaa_gmso, "RBTorsionForce", "dihedral_types"
+            FoyerFFs.get_ff("oplsaa"),
+            oplsaa_gmso,
+            "RBTorsionForce",
+            "dihedral_types",
         )
 
     def test_metadata(self, oplsaa_gmso):
@@ -162,7 +174,9 @@ class TestGMSOFFConversionTRAPPEUA(BaseTest):
         return FoyerFFs.get_ff("trappe_ua").to_gmso_ff()
 
     def test_atom_types(self, trappe_ua_gmso):
-        assert_atomtypes_equivalency(FoyerFFs.get_ff("trappe_ua"), trappe_ua_gmso)
+        assert_atomtypes_equivalency(
+            FoyerFFs.get_ff("trappe_ua"), trappe_ua_gmso
+        )
 
     def test_bond_types(self, trappe_ua_gmso):
         assert_forces_equivalency(FoyerFFs.get_ff("trappe_ua"), trappe_ua_gmso)
@@ -221,7 +235,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff('trappe_ua'),
+            FoyerFFs.get_ff("trappe_ua"),
             gaff_gmso,
             "PeriodicTorsionForce",
             "dihedral_types",
@@ -230,7 +244,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff('trappe_ua'),
+            FoyerFFs.get_ff("trappe_ua"),
             gaff_gmso,
             "PeriodicTorsionForce",
             "improper_types",
@@ -241,7 +255,9 @@ class TestGMSOFFConversionGAFF:
         assert gaff_gmso.name == FoyerFFs.gaff.name
         assert gaff_gmso.version == FoyerFFs.gaff.version
         non_bonded_forces = list(
-            filter(lambda c: isinstance(c, NonBondedForce), FoyerFFs.gaff.children)
+            filter(
+                lambda c: isinstance(c, NonBondedForce), FoyerFFs.gaff.children
+            )
         ).pop()
         scaling_factors = {
             "electrostatics14Scale": non_bonded_forces.coulomb14scale,
