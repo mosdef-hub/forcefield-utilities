@@ -221,7 +221,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.trappe_ua,
+            FoyerFFs.get_ff('trappe_ua'),
             gaff_gmso,
             "PeriodicTorsionForce",
             "dihedral_types",
@@ -230,7 +230,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.trappe_ua,
+            FoyerFFs.get_ff('trappe_ua'),
             gaff_gmso,
             "PeriodicTorsionForce",
             "improper_types",
