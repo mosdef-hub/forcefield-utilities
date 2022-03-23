@@ -581,6 +581,7 @@ class NonBondedForce(ForceFieldChild):
 
 
 class ForceField(FoyerXMLTag):
+    """General Forcefield xml that can create a GMSO Forcefield."""
     name: str = Field(
         default="Forcefield", alias="name", description="Name of the Forcefield"
     )
@@ -621,7 +622,10 @@ class ForceField(FoyerXMLTag):
                 if type(child) == loaders[children_type]:
                     for type_children in child.children:
                         yield type_children
-
+    """TODO:
+    Need a to_foyer_ff method.
+    Will be similar the to_gmso_ff here.
+    """
     def to_gmso_ff(self):
         ff = GMSOForceField()
         ff_potentials = {}

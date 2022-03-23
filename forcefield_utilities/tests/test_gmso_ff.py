@@ -4,7 +4,7 @@ import unyt as u
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 
 from forcefield_utilities.foyer_xml import AtomTypes, NonBondedForce
-from forcefield_utilities.prepackaged import FoyerFFs
+from forcefield_utilities  import FoyerFFs
 from forcefield_utilities.tests.base_test import BaseTest
 
 parameters_map = {"length": "r_eq", "angle": "theta_eq"}
@@ -128,31 +128,31 @@ def assert_forces_equivalency(
 class TestGMSOFFConversionOPLSAA(BaseTest):
     @pytest.fixture(scope="session")
     def oplsaa_gmso(self):
-        return FoyerFFs.oplsaa.to_gmso_ff()
+        return FoyerFFs.GetFF('oplsaa').to_gmso_ff()
 
     def test_atom_types(self, oplsaa_gmso):
-        assert_atomtypes_equivalency(FoyerFFs.oplsaa, oplsaa_gmso)
+        assert_atomtypes_equivalency(FoyerFFs.GetFF('oplsaa'), oplsaa_gmso)
 
     def test_bond_types(self, oplsaa_gmso):
-        assert_forces_equivalency(FoyerFFs.oplsaa, oplsaa_gmso)
+        assert_forces_equivalency(FoyerFFs.GetFF('oplsaa'), oplsaa_gmso)
 
     def test_angle_types(self, oplsaa_gmso):
         assert_forces_equivalency(
-            FoyerFFs.oplsaa, oplsaa_gmso, "HarmonicAngleForce", "angle_types"
+            FoyerFFs.GetFF('oplsaa'), oplsaa_gmso, "HarmonicAngleForce", "angle_types"
         )
 
     def test_dihedral_types(self, oplsaa_gmso):
         assert_forces_equivalency(
-            FoyerFFs.oplsaa, oplsaa_gmso, "RBTorsionForce", "dihedral_types"
+            FoyerFFs.GetFF('oplsaa'), oplsaa_gmso, "RBTorsionForce", "dihedral_types"
         )
 
     def test_metadata(self, oplsaa_gmso):
-        assert oplsaa_gmso.name == FoyerFFs.oplsaa.name
-        assert oplsaa_gmso.version == FoyerFFs.oplsaa.version
+        assert oplsaa_gmso.name == FoyerFFs.GetFF('oplsaa').name
+        assert oplsaa_gmso.version == FoyerFFs.GetFF('oplsaa').version
         non_bonded_forces = list(
             filter(
                 lambda c: isinstance(c, NonBondedForce),
-                FoyerFFs.oplsaa.children,
+                FoyerFFs.GetFF('oplsaa').children,
             )
         ).pop()
         scaling_factors = {
@@ -165,17 +165,17 @@ class TestGMSOFFConversionOPLSAA(BaseTest):
 class TestGMSOFFConversionTRAPPEUA(BaseTest):
     @pytest.fixture(scope="session")
     def trappe_ua_gmso(self):
-        return FoyerFFs.trappe_ua.to_gmso_ff()
+        return FoyerFFs.GetFF('trappe_ua').to_gmso_ff()
 
     def test_atom_types(self, trappe_ua_gmso):
-        assert_atomtypes_equivalency(FoyerFFs.trappe_ua, trappe_ua_gmso)
+        assert_atomtypes_equivalency(FoyerFFs.GetFF('trappe_ua'), trappe_ua_gmso)
 
     def test_bond_types(self, trappe_ua_gmso):
-        assert_forces_equivalency(FoyerFFs.trappe_ua, trappe_ua_gmso)
+        assert_forces_equivalency(FoyerFFs.GetFF('trappe_ua'), trappe_ua_gmso)
 
     def test_angle_types(self, trappe_ua_gmso):
         assert_forces_equivalency(
-            FoyerFFs.trappe_ua,
+            FoyerFFs.GetFF('trappe_ua'),
             trappe_ua_gmso,
             "HarmonicAngleForce",
             "angle_types",
@@ -183,19 +183,19 @@ class TestGMSOFFConversionTRAPPEUA(BaseTest):
 
     def test_dihedral_types(self, trappe_ua_gmso):
         assert_forces_equivalency(
-            FoyerFFs.trappe_ua,
+            FoyerFFs.GetFF('trappe_ua'),
             trappe_ua_gmso,
             "RBTorsionForce",
             "dihedral_types",
         )
 
     def test_metadata(self, trappe_ua_gmso):
-        assert trappe_ua_gmso.name == FoyerFFs.trappe_ua.name
-        assert trappe_ua_gmso.version == FoyerFFs.trappe_ua.version
+        assert trappe_ua_gmso.name == FoyerFFs.GetFF('trappe_ua').name
+        assert trappe_ua_gmso.version == FoyerFFs.GetFF('trappe_ua').version
         non_bonded_forces = list(
             filter(
                 lambda c: isinstance(c, NonBondedForce),
-                FoyerFFs.trappe_ua.children,
+                FoyerFFs.GetFF('trappe_ua').children,
             )
         ).pop()
         scaling_factors = {
