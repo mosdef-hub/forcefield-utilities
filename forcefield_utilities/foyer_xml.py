@@ -60,9 +60,7 @@ class FoyerXMLAtomType(ForceFieldChild):
 class Type(FoyerXMLAtomType):
     name: str = Field(..., description="The AtomType Name", alias="name")
 
-    atom_class: str = Field(
-        ..., description="The AtomType class", alias="class"
-    )
+    atom_class: str = Field(..., description="The AtomType class", alias="class")
 
     element: Optional[str] = Field(
         default=None,
@@ -70,9 +68,7 @@ class Type(FoyerXMLAtomType):
         alias="element",
     )
 
-    mass: float = Field(
-        ..., description="The mass of the AtomType", alias="mass"
-    )
+    mass: float = Field(..., description="The mass of the AtomType", alias="mass")
 
     smarts_def: Optional[str] = Field(
         default=None, description="The smarts definition", alias="def"
@@ -121,9 +117,7 @@ class Bond(ForceFieldChild):
         default=None, description="Type 2 of the bond", alias="type2"
     )
 
-    length: float = Field(
-        ..., description="The length of the bond", alias="length"
-    )
+    length: float = Field(..., description="The length of the bond", alias="length")
 
     k: float = Field(..., description="The k-value of the bond", alias="k")
 
@@ -330,9 +324,7 @@ class RBTorsionForce(ForceFieldChild):
 
             classes = [child.class1, child.class2, child.class3, child.class4]
             if any(classes):
-                gmso_di_im_type.member_classes = [
-                    class_ or "*" for class_ in classes
-                ]
+                gmso_di_im_type.member_classes = [class_ or "*" for class_ in classes]
                 key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_classes)
             else:
                 gmso_di_im_type.member_types = [
@@ -356,9 +348,7 @@ class RBTorsionForce(ForceFieldChild):
             elif dihedral_type.tag == "Improper":
                 Creator = RBImproper
             else:
-                warnings.warn(
-                    f"Tag {dihedral_type.tag} not understood skipping"
-                )
+                warnings.warn(f"Tag {dihedral_type.tag} not understood skipping")
                 continue
             children.append(Creator.parse_obj(dihedral_type.attrib))
 
@@ -372,9 +362,7 @@ class PeriodicDihedral(Dihedral):
 
     k: List[float] = Field(..., description="Phase 1, 2, ....", alias="k")
 
-    phase: List[float] = Field(
-        ..., description="Phase 1, 2, 3 ...", alias="phase"
-    )
+    phase: List[float] = Field(..., description="Phase 1, 2, 3 ...", alias="phase")
 
     def xml_dict(self):
         max_count = len(self.periodicity)
@@ -447,9 +435,7 @@ class PeriodicTorsionForce(ForceFieldChild):
             elif dihedral_type.tag == "Improper":
                 Creator = PeriodicImproper
             else:
-                warnings.warn(
-                    f"Tag {dihedral_type.tag} not understood skipping"
-                )
+                warnings.warn(f"Tag {dihedral_type.tag} not understood skipping")
                 continue
             children.append(Creator.parse_obj(dihedral_type.attrib))
 
@@ -477,9 +463,7 @@ class PeriodicTorsionForce(ForceFieldChild):
 
             classes = [child.class1, child.class2, child.class3, child.class4]
             if any(classes):
-                gmso_di_im_type.member_classes = [
-                    class_ or "*" for class_ in classes
-                ]
+                gmso_di_im_type.member_classes = [class_ or "*" for class_ in classes]
                 key = FF_TOKENS_SEPARATOR.join(gmso_di_im_type.member_classes)
             else:
                 gmso_di_im_type.member_types = [
@@ -496,9 +480,7 @@ class PeriodicTorsionForce(ForceFieldChild):
 
 
 class NonBondedAtom(ForceFieldChild):
-    atom_type: str = Field(
-        ..., alias="type", description="Atom Type Information"
-    )
+    atom_type: str = Field(..., alias="type", description="Atom Type Information")
 
     charge: float = Field(
         ..., alias="charge", description="The charge of the atom type"
@@ -506,9 +488,7 @@ class NonBondedAtom(ForceFieldChild):
 
     sigma: float = Field(..., alias="sigma", description="The Sigma parameter")
 
-    epsilon: float = Field(
-        ..., alias="epsilon", description="The epsilon parameter"
-    )
+    epsilon: float = Field(..., alias="epsilon", description="The epsilon parameter")
 
     def parameters(self):
         return self.dict(include={"charge", "sigma", "epsilon"})
@@ -545,8 +525,7 @@ class NonBondedForce(ForceFieldChild):
             gmso_atom_type.doi = foyer_atomtype.doi
             gmso_atom_type.overrides = (
                 set(
-                    override.strip()
-                    for override in foyer_atomtype.overrides.split(",")
+                    override.strip() for override in foyer_atomtype.overrides.split(",")
                 )
                 if foyer_atomtype.overrides
                 else set()
@@ -582,6 +561,7 @@ class NonBondedForce(ForceFieldChild):
 
 class ForceField(FoyerXMLTag):
     """General Forcefield xml that can create a GMSO Forcefield."""
+
     name: str = Field(
         default="Forcefield", alias="name", description="Name of the Forcefield"
     )
@@ -622,17 +602,12 @@ class ForceField(FoyerXMLTag):
                 if type(child) == loaders[children_type]:
                     for type_children in child.children:
                         yield type_children
-    """TODO:
-    Need a to_foyer_ff method.
-    Will be similar the to_gmso_ff here.
-    """
+
     def to_gmso_ff(self):
         ff = GMSOForceField()
         ff_potentials = {}
         for child in self.children:
-            if hasattr(child, "gmso_template") and hasattr(
-                child, "to_gmso_potentials"
-            ):
+            if hasattr(child, "gmso_template") and hasattr(child, "to_gmso_potentials"):
                 potentials = child.to_gmso_potentials(self.children)
                 for attr in potentials:
                     if attr in ff_potentials:

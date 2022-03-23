@@ -83,7 +83,7 @@ class FoyerFFs:
 
     Methods
     __________
-    GetFF(ffname="oplsaa"):
+    get_ff(ffname="oplsaa"):
         Load and directly return the forcefield xml from Foyer or a path.
         Parameters
         __________
@@ -105,7 +105,7 @@ class FoyerFFs:
         self.loaded_ffs = {}
 
     @classmethod
-    def GetFF(self, ffname, rel_to_module=False):
+    def get_ff(self, ffname, rel_to_module=False):
         """Load and directly return the forcefield xml from Foyer or a path.
         Parameters
         __________
@@ -153,7 +153,7 @@ class FoyerFFs:
 
     def __getitem__(self, ffname):
         """Get function for indexing by loaded forcefields"""
-        if not ffname in self.loaded_ffs.keys():
+        if ffname not in self.loaded_ffs.keys():
             return None
         else:
             return self.ff_registry[ffname]()

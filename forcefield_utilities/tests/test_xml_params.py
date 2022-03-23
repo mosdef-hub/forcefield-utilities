@@ -7,17 +7,15 @@ from forcefield_utilities.tests.base_test import BaseTest
 
 class TestXMLParams(BaseTest):
     def test_atom_types_oplsaa(self, oplsaa_foyer):
-        for atom_type in FoyerFFs.GetFF('oplsaa').iterate_on(
+        for atom_type in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="NonbondedForce"
         ):
             assert atom_type.dict(
                 exclude_none=True, exclude={"atom_type"}
-            ) == oplsaa_foyer.get_parameters(
-                group="atoms", key=atom_type.atom_type
-            )
+            ) == oplsaa_foyer.get_parameters(group="atoms", key=atom_type.atom_type)
 
     def test_bond_types_oplsaa(self, oplsaa_foyer, missing_atom_classes_oplsaa):
-        for harmonic_bond in FoyerFFs.GetFF('oplsaa').iterate_on(
+        for harmonic_bond in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="HarmonicBondForce"
         ):
             if (
@@ -35,7 +33,7 @@ class TestXMLParams(BaseTest):
     def test_harmonic_angle_types_oplsaa(
         self, oplsaa_foyer, missing_atom_classes_oplsaa
     ):
-        for harmonic_angle in FoyerFFs.GetFF('oplsaa').iterate_on(
+        for harmonic_angle in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="HarmonicAngleForce"
         ):
             if (
@@ -58,7 +56,7 @@ class TestXMLParams(BaseTest):
                 )
 
     def test_rb_torsions(self, oplsaa_foyer, missing_atom_classes_oplsaa):
-        for rb_torsion in FoyerFFs.GetFF('oplsaa').iterate_on(
+        for rb_torsion in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="RBTorsionForce"
         ):
             if (
@@ -89,14 +87,10 @@ class TestXMLParams(BaseTest):
         reason="Gaff Forcefield not found",
     )
     def test_atomtypes_gaff(self, gaff_foyer):
-        for atom_type in FoyerFFs.gaff.iterate_on(
-            children_type="NonbondedForce"
-        ):
+        for atom_type in FoyerFFs.gaff.iterate_on(children_type="NonbondedForce"):
             assert atom_type.dict(
                 exclude_none=True, exclude={"atom_type"}
-            ) == gaff_foyer.get_parameters(
-                group="atoms", key=atom_type.atom_type
-            )
+            ) == gaff_foyer.get_parameters(group="atoms", key=atom_type.atom_type)
 
     @pytest.mark.skipif(
         condition=not hasattr(FoyerFFs, "gaff"),
