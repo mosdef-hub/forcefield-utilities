@@ -25,6 +25,7 @@ def _get_foyer_forcefield(xml_path):
         root = etree.parse(ff_file).getroot()
         return ForceField.load_from_etree(root)
 
+
 def load_xml(xml_name, rel_to_module=False):
     """Return the foyer Forcefield object for the `xml_name file found in working directory or in foyer.
 
@@ -45,7 +46,7 @@ def load_xml(xml_name, rel_to_module=False):
         else:
             ff = _get_foyer_forcefield(xml_name)
     except FileNotFoundError as e:
-        if not os.path.splitext(xml_name)[1] == '.xml':
+        if not os.path.splitext(xml_name)[1] == ".xml":
             print_error_message = (
                 r"Please make sure the path to the xml file, "
                 "uses the proper XML extension (.xml)."
@@ -55,11 +56,11 @@ def load_xml(xml_name, rel_to_module=False):
             raise e
     return ff
 
+
 def load_oplsaa():
     """Return the foyer Forcefield object for the oplsaa.xml file found in the foyer/forcefields/xml/ directory."""
-    return _get_foyer_forcefield(
-        _get_xml_path("foyer", "forcefields/xml/oplsaa.xml")
-    )
+    return _get_foyer_forcefield(_get_xml_path("foyer", "forcefields/xml/oplsaa.xml"))
+
 
 def load_trappe_ua():
     """Return the foyer Forcefield object for the trappe-ua.xml file found in the foyer/forcefields/xml/ directory."""
@@ -67,7 +68,8 @@ def load_trappe_ua():
         _get_xml_path("foyer", "forcefields/xml/trappe-ua.xml")
     )
 
-class FoyerFFs():
+
+class FoyerFFs:
     """Object to provide methods to forcefields shipped with Foyer.
 
     Attributes
@@ -91,11 +93,13 @@ class FoyerFFs():
     load(ffname="oplsaa", rel_to_module=False):
         Load and return the forcefield xml from Foyer or a path.
     """
+
     ff_registry = {
-        'oplsaa':load_oplsaa,
-        'trappe_ua':load_trappe_ua,
-        'custom_xml':load_xml
+        "oplsaa": load_oplsaa,
+        "trappe_ua": load_trappe_ua,
+        "custom_xml": load_xml,
     }
+
     def __init__(self):
         super().__init__()
         self.loaded_ffs = {}
@@ -120,7 +124,7 @@ class FoyerFFs():
         if ffname in self.ff_registry.keys():
             ff = self.ff_registry[ffname]()
         else:
-            ff = self.ff_registry['custom_xml'](ffname, rel_to_module)
+            ff = self.ff_registry["custom_xml"](ffname, rel_to_module)
         return ff
 
     def load(self, ffname, rel_to_module=False):
@@ -139,10 +143,12 @@ class FoyerFFs():
         ______
         ff : forcefield_utilities.foyer_xml.Forcefield
         """
-        if ffname in ['oplsaa', 'trappe_ua']:
+        if ffname in ["oplsaa", "trappe_ua"]:
             self.loaded_ffs[ffname] = self.ff_registry[ffname]()
         else:
-            self.loaded_ffs[ffname] = self.ff_registry['custom_xml'](ffname, rel_to_module)
+            self.loaded_ffs[ffname] = self.ff_registry["custom_xml"](
+                ffname, rel_to_module
+            )
         return self.loaded_ffs[ffname]
 
     def __getitem__(self, ffname):
