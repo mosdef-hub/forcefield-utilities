@@ -7,7 +7,7 @@ from forcefield_utilities.tests.base_test import BaseTest
 
 class TestXMLParams(BaseTest):
     def test_atom_types_oplsaa(self, oplsaa_foyer):
-        for atom_type in FoyerFFs.oplsaa.iterate_on(
+        for atom_type in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="NonbondedForce"
         ):
             assert atom_type.dict(
@@ -17,7 +17,7 @@ class TestXMLParams(BaseTest):
             )
 
     def test_bond_types_oplsaa(self, oplsaa_foyer, missing_atom_classes_oplsaa):
-        for harmonic_bond in FoyerFFs.oplsaa.iterate_on(
+        for harmonic_bond in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="HarmonicBondForce"
         ):
             if (
@@ -35,7 +35,7 @@ class TestXMLParams(BaseTest):
     def test_harmonic_angle_types_oplsaa(
         self, oplsaa_foyer, missing_atom_classes_oplsaa
     ):
-        for harmonic_angle in FoyerFFs.oplsaa.iterate_on(
+        for harmonic_angle in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="HarmonicAngleForce"
         ):
             if (
@@ -58,7 +58,7 @@ class TestXMLParams(BaseTest):
                 )
 
     def test_rb_torsions(self, oplsaa_foyer, missing_atom_classes_oplsaa):
-        for rb_torsion in FoyerFFs.oplsaa.iterate_on(
+        for rb_torsion in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="RBTorsionForce"
         ):
             if (

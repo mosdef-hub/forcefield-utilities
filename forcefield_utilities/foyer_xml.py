@@ -581,6 +581,8 @@ class NonBondedForce(ForceFieldChild):
 
 
 class ForceField(FoyerXMLTag):
+    """General Forcefield xml that can create a GMSO Forcefield."""
+
     name: str = Field(
         default="Forcefield", alias="name", description="Name of the Forcefield"
     )
