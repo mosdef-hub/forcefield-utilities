@@ -34,7 +34,7 @@ class ParametersTransformer:
     @staticmethod
     def transform_harmonic_bond(parameters):
         transformed = {
-            "k": parameters["k"] * u.kJ / (u.nm ** 2) / u.mol,
+            "k": parameters["k"] * u.kJ / (u.nm**2) / u.mol,
             "r_eq": parameters["length"] * u.nm,
         }
         return transformed
