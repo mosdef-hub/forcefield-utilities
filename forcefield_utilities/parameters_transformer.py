@@ -26,23 +26,23 @@ class ParametersTransformer:
     @staticmethod
     def transform_lennard_jones(parameters):
         transformed = {
-            "sigma": parameters["sigma"] * u.nm,
             "epsilon": parameters["epsilon"] * u.kJ / u.mol,
+            "sigma": parameters["sigma"] * u.nm,
         }
         return transformed
 
     @staticmethod
     def transform_harmonic_bond(parameters):
         transformed = {
+            "k": parameters["k"] * u.kJ / (u.nm**2) / u.mol,
             "r_eq": parameters["length"] * u.nm,
-            "k": parameters["k"] * u.kJ / (u.nm**2),
         }
         return transformed
 
     @staticmethod
     def transform_harmonic_angle(parameters):
         transformed = {
-            "k": parameters["k"] * u.kJ / (u.radian**2),
+            "k": parameters["k"] * u.kJ / (u.radian**2) / u.mol,
             "theta_eq": parameters["angle"] * u.radian,
         }
         return transformed
@@ -62,8 +62,8 @@ class ParametersTransformer:
     @staticmethod
     def transform_periodic_torsion(parameters):
         transformed = {
-            "n": parameters["periodicity"] * u.dimensionless,
+            "k": parameters["k"] * u.kJ / u.mol,
             "phi_eq": parameters["phase"] * u.radian,
-            "k": parameters["k"] * u.kJ,
+            "n": parameters["periodicity"] * u.dimensionless,
         }
         return transformed
