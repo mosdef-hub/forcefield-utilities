@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="forcefield_utilities",
-    version="0.1.0",
+    version="0.1.1",
     description="XML Conversion Utilities for MoSDeF ForceFields",
     authors="Umesh Timalsina",
     author_email="umesh.timalsina@vanderbilt.edu",
