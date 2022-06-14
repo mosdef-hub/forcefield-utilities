@@ -3,9 +3,9 @@ channels:
   - conda-forge
 dependencies:
   - bump2version
-  - codecov
   - foyer
   - pytest
+  - pytest-cov
   - pre-commit
   - pip
   - gmso
