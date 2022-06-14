@@ -171,19 +171,19 @@ class TestGMSOFFConversionOPLSAA(BaseTest):
 class TestGMSOFFConversionTRAPPEUA(BaseTest):
     @pytest.fixture(scope="session")
     def trappe_ua_gmso(self):
-        return FoyerFFs.get_ff("trappe_ua").to_gmso_ff()
+        return FoyerFFs.get_ff("trappe-ua").to_gmso_ff()
 
     def test_atom_types(self, trappe_ua_gmso):
         assert_atomtypes_equivalency(
-            FoyerFFs.get_ff("trappe_ua"), trappe_ua_gmso
+            FoyerFFs.get_ff("trappe-ua"), trappe_ua_gmso
         )
 
     def test_bond_types(self, trappe_ua_gmso):
-        assert_forces_equivalency(FoyerFFs.get_ff("trappe_ua"), trappe_ua_gmso)
+        assert_forces_equivalency(FoyerFFs.get_ff("trappe-ua"), trappe_ua_gmso)
 
     def test_angle_types(self, trappe_ua_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("trappe_ua"),
+            FoyerFFs.get_ff("trappe-ua"),
             trappe_ua_gmso,
             "HarmonicAngleForce",
             "angle_types",
@@ -191,19 +191,19 @@ class TestGMSOFFConversionTRAPPEUA(BaseTest):
 
     def test_dihedral_types(self, trappe_ua_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("trappe_ua"),
+            FoyerFFs.get_ff("trappe-ua"),
             trappe_ua_gmso,
             "RBTorsionForce",
             "dihedral_types",
         )
 
     def test_metadata(self, trappe_ua_gmso):
-        assert trappe_ua_gmso.name == FoyerFFs.get_ff("trappe_ua").name
-        assert trappe_ua_gmso.version == FoyerFFs.get_ff("trappe_ua").version
+        assert trappe_ua_gmso.name == FoyerFFs.get_ff("trappe-ua").name
+        assert trappe_ua_gmso.version == FoyerFFs.get_ff("trappe-ua").version
         non_bonded_forces = list(
             filter(
                 lambda c: isinstance(c, NonBondedForce),
-                FoyerFFs.get_ff("trappe_ua").children,
+                FoyerFFs.get_ff("trappe-ua").children,
             )
         ).pop()
         scaling_factors = {
@@ -235,7 +235,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("trappe_ua"),
+            FoyerFFs.get_ff("trappe-ua"),
             gaff_gmso,
             "PeriodicTorsionForce",
             "dihedral_types",
@@ -244,7 +244,7 @@ class TestGMSOFFConversionGAFF:
 
     def test_dihedral_types(self, gaff_gmso):
         assert_forces_equivalency(
-            FoyerFFs.get_ff("trappe_ua"),
+            FoyerFFs.get_ff("trappe-ua"),
             gaff_gmso,
             "PeriodicTorsionForce",
             "improper_types",
