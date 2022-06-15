@@ -80,7 +80,7 @@ class FoyerFFs:
         Parameters
         __________
         ffname : str, pathlib.Path
-              Name of forcefield to load or path of the foyer XML file
+              Name of forcefield to load or path of the foyer XML file. This is how the loaded forcefield can be accessed.
         rel_to_module : bool, optional default=False
              Deprecated, has no effect
 
@@ -94,6 +94,15 @@ class FoyerFFs:
         it will check the `custom_forcefields` global dictionary for the path and if not found
         check the foyer/forcefields/xml directory for a file named `ffname`+'.xml' and try to
         load it from there.
+
+        Accessing a local forcefields xmls/tip3p.xml:
+        ```python
+        import forcefield_utilities as ffutils
+        loader = ffutils.FoyerFFs()
+        loader.load("xmls/tip3p.xml")
+        loader["tip3p"] #Access method 1
+        loader.tip3p #Access method 2
+        ```
 
         Warnings
         --------
@@ -116,16 +125,16 @@ class FoyerFFs:
             return self.loaded_ffs[ff_path.name]
 
         if self._is_xml(ff_path):
-            self.loaded_ffs[ff_path.name] = _parse_foyer_xml(
+            self.loaded_ffs[ff_path.stem] = _parse_foyer_xml(
                 xml_path=ff_path.resolve()
             )
         else:
             xml_path = get_package_file_path(
                 "foyer", f"forcefields/xml/{ffname}.xml"
             )
-            self.loaded_ffs[ffname] = _parse_foyer_xml(xml_path)
+            self.loaded_ffs[ff_path.stem] = _parse_foyer_xml(xml_path)
 
-        return self.loaded_ffs[ffname]
+        return self.loaded_ffs[ff_path.stem]
 
     def __getitem__(self, ffname) -> ForceField:
         """Get function for indexing by loaded forcefields."""
