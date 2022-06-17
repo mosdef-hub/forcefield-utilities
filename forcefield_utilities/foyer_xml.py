@@ -544,7 +544,10 @@ class NonBondedForce(ForceFieldChild):
             # doi, overrides, defintion, description
             gmso_atom_type.doi = foyer_atomtype.doi
             gmso_atom_type.overrides = (
-                set(foyer_atomtype.overrides.strip().split(","))
+                set(
+                    override.strip()
+                    for override in foyer_atomtype.overrides.split(",")
+                )
                 if foyer_atomtype.overrides
                 else set()
             )
@@ -578,6 +581,8 @@ class NonBondedForce(ForceFieldChild):
 
 
 class ForceField(FoyerXMLTag):
+    """General Forcefield xml that can create a GMSO Forcefield."""
+
     name: str = Field(
         default="Forcefield", alias="name", description="Name of the Forcefield"
     )
