@@ -8,8 +8,13 @@ dependencies:
   - pytest-cov
   - pre-commit
   - pip
-  - gmso
+  - unyt
   - pydantic
   - lxml
+  - boltons
+  - numpy
+  - sympy
+  - ele
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
+      - "--editable=git+https://github.com/mosdef-hub/gmso.git#egg=gmso"

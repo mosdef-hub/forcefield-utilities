@@ -1,14 +1,37 @@
-import pathlib
-from typing import List, Optional, Union
+from functools import lru_cache
+from typing import List, Optional, Set, Union
 
+import sympy
 import unyt as u
 from gmso import ForceField as GMSOForceField
+from gmso.core.angle_type import AngleType as GMSOAngleType
 from gmso.core.atom_type import AtomType as GMSOAtomType
-from lxml.etree import Element
+from gmso.core.bond_type import BondType as GMSOBondType
+from gmso.core.dihedral_type import DihedralType as GMSODihedralType
+from gmso.core.improper_type import ImproperType as GMSOImproperType
+from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from pydantic import BaseModel, Field
 
 
+@lru_cache(maxsize=128)
+def indep_vars(expr: str, dependent: frozenset) -> Set:
+    """Given an expression and dependent variables, return independent variables for it."""
+    return sympy.sympify(expr).free_symbols - dependent
+
+
 class GMSOXMLTag(BaseModel):
+    def parameters(self, units=None):
+        params = self.children[0]
+        params_dict = {}
+        for parameter in params.children:
+            if units is None:
+                params_dict[parameter.name] = parameter.value
+            else:
+                params_dict[parameter.name] = (
+                    parameter.value * units[parameter.name]
+                )
+        return params_dict
+
     class Config:
         arbitrary_types_allowed = True
         allow_population_by_field_name = True
@@ -117,18 +140,6 @@ class AtomType(GMSOXMLTag):
         ..., description="The parameters and their values", alias="children"
     )
 
-    def parameters(self, units=None):
-        params = self.children[0]
-        params_dict = {}
-        for parameter in params.children:
-            if units is None:
-                params_dict[parameter.name] = parameter.value
-            else:
-                params_dict[parameter.name] = (
-                    parameter.value * units[parameter.name]
-                )
-        return params_dict
-
     @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
@@ -175,6 +186,12 @@ class AtomTypes(GMSOXMLChild):
             if not "expression" in atom_type_dict:
                 atom_type_dict["expression"] = self.expression
             atom_type_dict["parameters"] = atom_type.parameters(units)
+
+            if not atom_type_dict.get("independent_variables"):
+                atom_type_dict["independent_variables"] = indep_vars(
+                    atom_type_dict["expression"],
+                    frozenset(atom_type_dict["parameters"]),
+                )
 
             if default_units.get("charge") and atom_type_dict.get("charge"):
                 atom_type_dict["charge"] = (
@@ -236,7 +253,7 @@ class BondType(GMSOXMLTag):
         for el in root.iterchildren():
             if el.tag == "Parameters":
                 children.append(Parameters.load_from_etree(el))
-        return cls(children=children, **root.attrib)
+        return cls(children=children, **attribs)
 
 
 class BondTypes(GMSOXMLChild):
@@ -251,6 +268,58 @@ class BondTypes(GMSOXMLChild):
     children: List[Union[ParametersUnitDef, BondType]] = Field(
         ..., description="Children of this bond type tag", alias="children"
     )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"bond_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for bond_type in filter(
+            lambda c: isinstance(c, BondType), self.children
+        ):
+            bond_type_dict = bond_type.dict(
+                by_alias=True,
+                exclude={"children", "type1", "type2", "class1", "class2"},
+                exclude_none=True,
+            )
+
+            if "expression" not in bond_type_dict:
+                bond_type_dict["expression"] = self.expression
+
+            if bond_type.type1 and bond_type.type2:
+                bond_type_dict["member_types"] = (
+                    bond_type.type1,
+                    bond_type.type2,
+                )
+
+            elif bond_type.class1 and bond_type.class2:
+                bond_type_dict["member_classes"] = (
+                    bond_type.class1,
+                    bond_type.class2,
+                )
+
+            bond_type_dict["parameters"] = bond_type.parameters(units)
+            bond_type_dict["independent_variables"] = indep_vars(
+                bond_type_dict["expression"],
+                frozenset(bond_type_dict["parameters"]),
+            )
+
+            gmso_bond_type = GMSOBondType(**bond_type_dict)
+            if gmso_bond_type.member_types:
+                potentials["bond_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_types)
+                ] = gmso_bond_type
+            else:
+                potentials["bond_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_classes)
+                ] = gmso_bond_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):
@@ -320,6 +389,67 @@ class AngleTypes(GMSOXMLChild):
         ..., description="Children of this angle types tag", alias="children"
     )
 
+    def to_gmso_potentials(self, default_units):
+        potentials = {"angle_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for angle_type in filter(
+            lambda c: isinstance(c, AngleType), self.children
+        ):
+            angle_type_dict = angle_type.dict(
+                by_alias=True,
+                exclude={
+                    "children",
+                    "type1",
+                    "type2",
+                    "type3",
+                    "class1",
+                    "class2",
+                    "class3",
+                },
+                exclude_none=True,
+            )
+
+            if "expression" not in angle_type_dict:
+                angle_type_dict["expression"] = self.expression
+
+            if angle_type.type1 and angle_type.type2 and angle_type.type3:
+                angle_type_dict["member_types"] = (
+                    angle_type.type1,
+                    angle_type.type2,
+                    angle_type.type3,
+                )
+
+            elif angle_type.class1 and angle_type.class2 and angle_type.class3:
+                angle_type_dict["member_classes"] = (
+                    angle_type.class1,
+                    angle_type.class2,
+                    angle_type.class3,
+                )
+
+            angle_type_dict["parameters"] = angle_type.parameters(units)
+            angle_type_dict["independent_variables"] = indep_vars(
+                angle_type_dict["expression"],
+                frozenset(angle_type_dict["parameters"]),
+            )
+            gmso_angle_type = GMSOAngleType(**angle_type_dict)
+            if gmso_angle_type.member_types:
+                potentials["angle_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_types)
+                ] = gmso_angle_type
+            else:
+                potentials["angle_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_classes)
+                ] = gmso_angle_type
+
+        return potentials
+
     @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
@@ -381,8 +511,8 @@ class TorsionType(GMSOXMLTag):
 
     type4: Optional[str] = Field(
         None,
-        description="Type 3 for this Dihedral/Improper type",
-        alias="type3",
+        description="Type 4 for this Dihedral/Improper type",
+        alias="type4",
     )
 
     children: List[Parameters] = Field(
@@ -421,6 +551,87 @@ class TorsionTypes(GMSOXMLChild):
         description="Children of this dihedral/improper types tag",
         alias="children",
     )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"dihedral_types": {}, "improper_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for torsion_type in filter(
+            lambda c: isinstance(c, (DihedralType, ImproperType)), self.children
+        ):
+            torsion_dict = torsion_type.dict(
+                by_alias=True,
+                exclude={
+                    "children",
+                    "type1",
+                    "type2",
+                    "type3",
+                    "type4",
+                    "class1",
+                    "class2",
+                    "class3",
+                    "class4",
+                },
+                exclude_none=True,
+            )
+
+            if "expression" not in torsion_dict:
+                torsion_dict["expression"] = self.expression
+
+            if (
+                torsion_type.type1
+                and torsion_type.type2
+                and torsion_type.type3
+                and torsion_type.type4
+            ):
+                torsion_dict["member_types"] = (
+                    torsion_type.type1,
+                    torsion_type.type2,
+                    torsion_type.type3,
+                    torsion_type.type4,
+                )
+
+            elif (
+                torsion_type.class1
+                and torsion_type.class2
+                and torsion_type.class3
+                and torsion_type.class4
+            ):
+                torsion_dict["member_classes"] = (
+                    torsion_type.class1,
+                    torsion_type.class2,
+                    torsion_type.class3,
+                    torsion_type.class4,
+                )
+
+            torsion_dict["parameters"] = torsion_type.parameters(units)
+            torsion_dict["independent_variables"] = indep_vars(
+                torsion_dict["expression"],
+                frozenset(torsion_dict["parameters"]),
+            )
+            if isinstance(torsion_type, DihedralType):
+                gmso_torsion_type = GMSODihedralType(**torsion_dict)
+                key = "dihedral_types"
+            else:
+                gmso_torsion_type = GMSOImproperType(**torsion_dict)
+                key = "improper_types"
+
+            if gmso_torsion_type.member_types:
+                potentials[key][
+                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_types)
+                ] = gmso_torsion_type
+            else:
+                potentials[key][
+                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_classes)
+                ] = gmso_torsion_type
+
+        return potentials
 
     @classmethod
     def load_from_etree(cls, root):
@@ -541,6 +752,8 @@ class FFMetaData(GMSOXMLChild):
 
     nonbonded_14_scale: float = Field(0.5, alias="nonBonded14Scale")
 
+    combining_rule: str = Field("geometric", alias="combiningRule")
+
     @classmethod
     def load_from_etree(cls, root):
         attribs = root.attrib
@@ -589,20 +802,22 @@ class ForceField(GMSOXMLTag):
         ).pop()
         default_units = metadata.get_default_units()
         ff.scaling_factors = metadata.gmso_scaling_factors()
+        ff.combining_rule = metadata.combining_rule
         remaining_children = filter(
-            lambda child: not isinstance(child, (FFMetaData, Units)),
+            lambda c: not isinstance(c, (FFMetaData, Units)),
             self.children,
         )
         ff_potentials = {}
 
         for child in remaining_children:
-            potentials = child.to_gmso_potentials(default_units)
-            for attr in potentials:
-                if attr in ff_potentials:
-                    ff_potentials[attr].update(potentials[attr])
-                else:
-                    ff_potentials[attr] = potentials[attr]
-            break
+            if hasattr(child, "to_gmso_potentials"):
+                potentials = child.to_gmso_potentials(default_units)
+                for attr in potentials:
+                    if attr in ff_potentials:
+                        ff_potentials[attr].update(potentials[attr])
+                    else:
+                        ff_potentials[attr] = potentials[attr]
+
         for attr in ff_potentials:
             setattr(ff, attr, ff_potentials[attr])
 
