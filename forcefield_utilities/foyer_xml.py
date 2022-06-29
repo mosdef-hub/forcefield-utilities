@@ -653,5 +653,6 @@ class ForceField(FoyerXMLTag):
 
         ff.name = self.name
         ff.version = self.version
+        ff.combining_rule = self.combining_rule
 
         return ff
