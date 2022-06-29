@@ -183,7 +183,16 @@ class AtomTypes(GMSOXMLChild):
                 exclude={"children", "element"},
                 exclude_none=True,
             )
-            if not "expression" in atom_type_dict:
+
+            overrides = atom_type_dict.get("overrides")
+            if overrides:
+                atom_type_dict["overrides"] = set(
+                    o.strip() for o in overrides.split(",")
+                )
+            else:
+                atom_type_dict["overrides"] = set()
+
+            if "expression" not in atom_type_dict:
                 atom_type_dict["expression"] = self.expression
             atom_type_dict["parameters"] = atom_type.parameters(units)
 
