@@ -1,14 +1,19 @@
 import pytest
 
 from forcefield_utilities.tests.base_test import BaseTest
+from forcefield_utilities.tests.utils import get_test_file_path
 from forcefield_utilities.utils import get_package_file_path
-from forcefield_utilities.xml_loader import FoyerFFs
+from forcefield_utilities.xml_loader import FoyerFFs, GMSOFFs
 
 
 class TestXMLLoader(BaseTest):
     @pytest.fixture
     def foyer_xml_loader(self):
         return FoyerFFs()
+
+    @pytest.fixture
+    def gmso_xml_loader(self):
+        return GMSOFFs()
 
     def test_load_gaff(self, foyer_xml_loader):
         foyer_xml_loader.get_ff("gaff")
@@ -56,3 +61,9 @@ class TestXMLLoader(BaseTest):
 
         assert "benzene_lb" in foyer_xml_loader.loaded_ffs
         assert loaded_id != id(foyer_xml_loader.load("benzene_lb"))
+
+    def test_different_loading_entries(self, foyer_xml_loader, gmso_xml_loader):
+        assert id(foyer_xml_loader.loaded_ffs) != id(gmso_xml_loader.loaded_ffs)
+        gmso_xml_loader.load(get_test_file_path("propanol_Mie_ua.xml"))
+        assert "propanol_Mie_ua" in gmso_xml_loader.loaded_ffs
+        assert "propanol_Mie_ua" not in foyer_xml_loader.loaded_ffs

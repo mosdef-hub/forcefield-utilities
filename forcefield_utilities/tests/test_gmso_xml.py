@@ -4,18 +4,16 @@ from gmso.tests.utils import get_path
 from lxml import etree
 from sympy import sympify
 
-from forcefield_utilities.gmso_xml import ForceField
 from forcefield_utilities.tests.base_test import BaseTest
 from forcefield_utilities.tests.utils import get_test_file_path
+from forcefield_utilities.xml_loader import GMSOFFs
 
 
 class TestEthyleneFF(BaseTest):
     @pytest.fixture(scope="session")
     def ff_example_zero(self):
         example_zero = get_path("ethylene.xml")
-        with open(example_zero, "r") as example_zero_file:
-            root = etree.parse(example_zero_file).getroot()
-        return ForceField.load_from_etree(root).to_gmso_ff()
+        return GMSOFFs().load(example_zero).to_gmso_ff()
 
     def test_metadata(self, ff_example_zero):
         assert ff_example_zero.scaling_factors == {
@@ -96,11 +94,7 @@ class TestTwoPropanolMIEFF(BaseTest):
     @pytest.fixture(scope="session")
     def propanol_ua_mie(self):
         propanol_ua_mie_path = get_test_file_path("propanol_Mie_ua.xml")
-
-        with open(propanol_ua_mie_path, "r") as ff_xml_file:
-            root = etree.parse(ff_xml_file).getroot()
-
-        return ForceField.load_from_etree(root).to_gmso_ff()
+        return GMSOFFs().load(propanol_ua_mie_path).to_gmso_ff()
 
     def test_metadata(self, propanol_ua_mie):
         assert (
