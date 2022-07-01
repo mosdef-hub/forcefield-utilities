@@ -72,7 +72,6 @@ class XMLLoader:
         ff : forcefield_utilities.foyer_xml.Forcefield
         """
         loader = cls()
-        print(loader.loaded_ffs.keys(), "000", ffname)
         return loader.load(ffname)
 
     @deprecate_kwargs(deprecated_kwargs={"rel_to_module"})
@@ -116,7 +115,6 @@ class XMLLoader:
             ffname in self.loaded_ffs
             and ffname not in self.overwritten_custom_ffs
         ):
-            print(id(self.loaded_ffs[ffname]))
             return self.loaded_ffs[ffname]
 
         ff_path = Path(ffname)
