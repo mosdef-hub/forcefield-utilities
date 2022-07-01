@@ -757,9 +757,9 @@ class Units(GMSOXMLTag):
 class FFMetaData(GMSOXMLChild):
     children: List[Units] = Field([], alias="children")
 
-    electrostatic_14_scale: float = Field(0.5, alias="electrostatics14Scale")
+    electrostatcs14Scale: float = Field(0.5, alias="electrostatics14Scale")
 
-    nonbonded_14_scale: float = Field(0.5, alias="nonBonded14Scale")
+    nonBonded14Scale: float = Field(0.5, alias="nonBonded14Scale")
 
     combining_rule: str = Field("geometric", alias="combiningRule")
 
@@ -773,7 +773,7 @@ class FFMetaData(GMSOXMLChild):
 
     def gmso_scaling_factors(self):
         return self.dict(
-            include={"electrostatic_14_scale", "nonbonded_14_scale"},
+            include={"electrostatcs14Scale", "nonBonded14Scale"},
             exclude_none=True,
         )
 
