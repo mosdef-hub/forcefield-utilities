@@ -67,3 +67,10 @@ class TestXMLLoader(BaseTest):
         gmso_xml_loader.load(get_test_file_path("propanol_Mie_ua.xml"))
         assert "propanol_Mie_ua" in gmso_xml_loader.loaded_ffs
         assert "propanol_Mie_ua" not in foyer_xml_loader.loaded_ffs
+
+    def test_class_methods_gmso_ff(self):
+        gmso_xml_loader = GMSOFFs()
+        gmso_xml_loader.load(get_test_file_path("propanol_Mie_ua.xml"))
+        ff1 = gmso_xml_loader.get_ff("propanol_Mie_ua")
+        ff2 = gmso_xml_loader.load("propanol_Mie_ua")
+        assert id(ff1) == id(ff2)
