@@ -245,5 +245,5 @@ class TestListParameters(BaseTest):
         )
         assert u.allclose_units(
             params["k"],
-            [0.0, 0.4169552, -0.05796675, 0.3734553, 0.0, 0.0] * u.kCal / u.mol,
+            [0.0, 0.4169552, -0.05796675, 0.3734553, 0.0, 0.0] * u.kcal / u.mol,
         )
