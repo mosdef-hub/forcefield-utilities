@@ -17,8 +17,8 @@ class TestEthyleneFF(BaseTest):
 
     def test_metadata(self, ff_example_zero):
         assert ff_example_zero.scaling_factors == {
-            "electrostatic_14_scale": 0.5,
-            "nonbonded_14_scale": 0.5,
+            "electrostatics14Scale": 0.5,
+            "nonBonded14Scale": 0.5,
         }
         assert ff_example_zero.combining_rule == "geometric"
 
@@ -102,8 +102,8 @@ class TestTwoPropanolMIEFF(BaseTest):
             == "Mie two-propanol- This is for testing only and not for use for simulations "
         )
         assert propanol_ua_mie.scaling_factors == {
-            "electrostatic_14_scale": 0.0,
-            "nonbonded_14_scale": 0.0,
+            "electrostatics14Scale": 0.0,
+            "nonBonded14Scale": 0.0,
         }
         assert propanol_ua_mie.combining_rule == "geometric"
 
@@ -226,3 +226,24 @@ class TestTwoPropanolMIEFF(BaseTest):
         assert u.allclose_units(parameters["phi_eq3"], 0.0 * u.degree)
         assert u.allclose_units(parameters["phi_eq4"], 0.0 * u.degree)
         assert u.allclose_units(parameters["phi_eq5"], 0.0 * u.degree)
+
+
+class TestListParameters(BaseTest):
+    @pytest.fixture(scope="session")
+    def propanol_ua_mie_list(self):
+        propanol_ua_mie_path = get_test_file_path(
+            "propanol_Mie_ua_list_params.xml"
+        )
+        return GMSOFFs().load(propanol_ua_mie_path).to_gmso_ff()
+
+    def test_dihedral_params(self, propanol_ua_mie_list):
+        dih_with_list = propanol_ua_mie_list.dihedral_types["CH3~CH~O~H"]
+        params = dih_with_list.get_parameters()
+        print(params)
+        assert u.allclose_units(
+            params["phi_eq"], [0.0, 180.0, 0.0, 0.0, 0.0, 0.0] * u.degree
+        )
+        assert u.allclose_units(
+            params["k"],
+            [0.0, 0.4169552, -0.05796675, 0.3734553, 0.0, 0.0] * u.kCal / u.mol,
+        )

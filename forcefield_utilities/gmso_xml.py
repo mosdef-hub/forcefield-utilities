@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List, Optional, Set, Union
 
+import numpy as np
 import sympy
 import unyt as u
 from gmso import ForceField as GMSOForceField
@@ -60,13 +61,26 @@ class Parameter(GMSOXMLTag):
         ..., description="The name of the parameter", alias="name"
     )
 
-    value: float = Field(
+    value: Union[float, np.ndarray] = Field(
         ..., description="The value of the parameter", alias="value"
     )
 
     @classmethod
     def load_from_etree(cls, root):
-        return cls(**root.attrib)
+        attribs = root.attrib
+        if "value" in root.attrib:
+            return cls(**attribs)
+        else:
+            children = root.getchildren()
+            if len(children) == 0:
+                raise ValueError(
+                    "Neither a single value nor a sequence of values provided for "
+                    f"parameter {attribs['name']}. Please provide one or the other"
+                )
+            value = np.array(
+                [param_value.text for param_value in children], dtype=float
+            )
+            return cls(name=attribs["name"], value=value)
 
 
 class Parameters(GMSOXMLTag):
@@ -757,7 +771,7 @@ class Units(GMSOXMLTag):
 class FFMetaData(GMSOXMLChild):
     children: List[Units] = Field([], alias="children")
 
-    electrostatcs14Scale: float = Field(0.5, alias="electrostatics14Scale")
+    electrostatics14Scale: float = Field(0.5, alias="electrostatics14Scale")
 
     nonBonded14Scale: float = Field(0.5, alias="nonBonded14Scale")
 
@@ -773,7 +787,7 @@ class FFMetaData(GMSOXMLChild):
 
     def gmso_scaling_factors(self):
         return self.dict(
-            include={"electrostatcs14Scale", "nonBonded14Scale"},
+            include={"electrostatics14Scale", "nonBonded14Scale"},
             exclude_none=True,
         )
 
