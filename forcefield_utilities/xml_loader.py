@@ -1,8 +1,8 @@
 import abc
-import os
 from pathlib import Path
 from typing import Union
 
+from gmso.utils.ff_utils import _validate_schema as validate_gmso_schema
 from lxml import etree
 
 from forcefield_utilities.foyer_xml import ForceField as FoyerForceField
@@ -211,7 +211,9 @@ class GMSOFFs(XMLLoader):
     def load_xml(self, xml_path):
         """Return the gmso Forcefield object from the relative path ``xml_path`` for a gmso XML."""
         with open(xml_path) as ff_file:
-            root = etree.parse(ff_file).getroot()
+            ff_etree = etree.parse(ff_file)
+            validate_gmso_schema(ff_etree)
+            root = ff_etree.getroot()
             return GMSOForceField.load_from_etree(root)
 
 
