@@ -4,9 +4,6 @@ from typing import List, Optional, Set, Union
 import numpy as np
 import sympy
 import unyt as u
-from pydantic import BaseModel, Field
-
-from forcefield_utilities.utils import pad_with_wildcards
 from gmso import ForceField as GMSOForceField
 from gmso.core.angle_type import AngleType as GMSOAngleType
 from gmso.core.atom_type import AtomType as GMSOAtomType
@@ -14,6 +11,9 @@ from gmso.core.bond_type import BondType as GMSOBondType
 from gmso.core.dihedral_type import DihedralType as GMSODihedralType
 from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from pydantic import BaseModel, Field
+
+from forcefield_utilities.utils import pad_with_wildcards
 
 
 @lru_cache(maxsize=128)

@@ -1,12 +1,12 @@
 import pytest
 import unyt as u
+from gmso.tests.utils import get_path
 from lxml import etree
 from sympy import sympify
 
 from forcefield_utilities.tests.base_test import BaseTest
 from forcefield_utilities.tests.utils import get_test_file_path
 from forcefield_utilities.xml_loader import GMSOFFs
-from gmso.tests.utils import get_path
 
 
 class TestEthyleneFF(BaseTest):
