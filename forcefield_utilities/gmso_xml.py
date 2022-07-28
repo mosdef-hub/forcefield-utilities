@@ -13,6 +13,8 @@ from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from pydantic import BaseModel, Field
 
+from forcefield_utilities.utils import pad_with_wildcards
+
 
 @lru_cache(maxsize=128)
 def indep_vars(expr: str, dependent: frozenset) -> Set:
@@ -271,8 +273,8 @@ class BondType(GMSOXMLTag):
 
     @classmethod
     def load_from_etree(cls, root):
-        attribs = root.attrib
         children = []
+        attribs = pad_with_wildcards(root.attrib, 2)
         for el in root.iterchildren():
             if el.tag == "Parameters":
                 children.append(Parameters.load_from_etree(el))
@@ -391,12 +393,12 @@ class AngleType(GMSOXMLTag):
 
     @classmethod
     def load_from_etree(cls, root):
-        attribs = root.attrib
         children = []
+        attribs = pad_with_wildcards(root.attrib, 3)
         for el in root.iterchildren():
             if el.tag == "Parameters":
                 children.append(Parameters.load_from_etree(el))
-        return cls(children=children, **root.attrib)
+        return cls(children=children, **attribs)
 
 
 class AngleTypes(GMSOXMLChild):
@@ -544,12 +546,12 @@ class TorsionType(GMSOXMLTag):
 
     @classmethod
     def load_from_etree(cls, root):
-        attribs = root.attrib
         children = []
+        attribs = pad_with_wildcards(root.attrib, 4)
         for el in root.iterchildren():
             if el.tag == "Parameters":
                 children.append(Parameters.load_from_etree(el))
-        return cls(children=children, **root.attrib)
+        return cls(children=children, **attribs)
 
 
 class DihedralType(TorsionType):

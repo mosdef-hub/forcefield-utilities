@@ -50,3 +50,24 @@ def _deprecate_kwargs(kwargs, deprecated_kwargs):
             DeprecationWarning,
             3,
         )
+
+
+def pad_with_wildcards(input_dictionary, max_len, wildcard="*"):
+    """Pad empty type or classes with wildcards"""
+    types = [f'type{j+1}' for j in range(max_len)]
+    classes = [f'class{j+1}' for j in range(max_len)]
+
+    if types[0] in input_dictionary:
+        for type_ in types:
+            value = input_dictionary[type_]
+            if isinstance(value, str) and value.strip() == '':
+                input_dictionary[type_] = wildcard
+
+    elif classes[0] in input_dictionary:
+        for class_ in classes:
+            value = input_dictionary[class_]
+            if isinstance(value, str) and value.strip() == '':
+                input_dictionary[class_] = wildcard
+
+    return input_dictionary
+
