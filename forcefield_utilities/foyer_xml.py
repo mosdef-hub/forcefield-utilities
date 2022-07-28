@@ -3,6 +3,9 @@ import re
 import warnings
 from typing import Any, ClassVar, List, Optional, Set, Union
 
+from pydantic import BaseModel, Field
+
+from forcefield_utilities.parameters_transformer import ParametersTransformer
 from gmso.core.angle_type import AngleType
 from gmso.core.atom_type import AtomType
 from gmso.core.bond_type import BondType
@@ -14,9 +17,6 @@ from gmso.lib.potential_templates import (
     PotentialTemplateLibrary,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
-from pydantic import BaseModel, Field
-
-from forcefield_utilities.parameters_transformer import ParametersTransformer
 
 __all__ = ["ForceField"]
 

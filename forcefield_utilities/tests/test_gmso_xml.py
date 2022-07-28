@@ -1,12 +1,12 @@
 import pytest
 import unyt as u
-from gmso.tests.utils import get_path
 from lxml import etree
 from sympy import sympify
 
 from forcefield_utilities.tests.base_test import BaseTest
 from forcefield_utilities.tests.utils import get_test_file_path
 from forcefield_utilities.xml_loader import GMSOFFs
+from gmso.tests.utils import get_path
 
 
 class TestEthyleneFF(BaseTest):
@@ -43,7 +43,10 @@ class TestEthyleneFF(BaseTest):
         angle_type_harmonic_2 = ff_example_zero.angle_types[
             "opls_144~opls_143~opls_144"
         ]
-        assert str(angle_type_harmonic_2.expression) == "0.5*k*(theta - theta_eq)**2"
+        assert (
+            str(angle_type_harmonic_2.expression)
+            == "0.5*k*(theta - theta_eq)**2"
+        )
         assert angle_type_harmonic_2.member_types == (
             "opls_144",
             "opls_143",
@@ -114,7 +117,8 @@ class TestTwoPropanolMIEFF(BaseTest):
         assert ch3_sp3.definition == "[_CH3;X1][_CH3,_HC]"
         assert u.allclose_units(ch3_sp3.mass, 15.03500 * u.amu)
         assert (
-            ch3_sp3.description == "Alkane CH3, Mie using the k constant from Trappe-UA"
+            ch3_sp3.description
+            == "Alkane CH3, Mie using the k constant from Trappe-UA"
         )
         assert ch3_sp3.doi == "10.1021/jp984742e and 10.1021/jp972543+"
         assert ch3_sp3.overrides == set()
@@ -172,7 +176,9 @@ class TestTwoPropanolMIEFF(BaseTest):
 
         assert angle_type_ch3_ch_o.name == "AngleType_Harmonic_CH3_CH_O"
         assert angle_type_ch3_ch_o.member_classes == ("CH3", "CH", "O")
-        assert angle_type_ch3_ch_o.expression == sympify("k * (theta - theta_eq)**2")
+        assert angle_type_ch3_ch_o.expression == sympify(
+            "k * (theta - theta_eq)**2"
+        )
 
         parameters = angle_type_ch3_ch_o.get_parameters()
         assert u.allclose_units(
@@ -184,7 +190,8 @@ class TestTwoPropanolMIEFF(BaseTest):
         dihedral_type_ch3_ch_o_h = propanol_ua_mie.dihedral_types["CH3~CH~O~H"]
 
         assert (
-            dihedral_type_ch3_ch_o_h.name == "DihedralType_Periodic_Proper_CH3_CH_O_H"
+            dihedral_type_ch3_ch_o_h.name
+            == "DihedralType_Periodic_Proper_CH3_CH_O_H"
         )
         assert dihedral_type_ch3_ch_o_h.member_classes == (
             "CH3",
@@ -202,9 +209,15 @@ class TestTwoPropanolMIEFF(BaseTest):
 
         parameters = dihedral_type_ch3_ch_o_h.get_parameters()
         assert u.allclose_units(parameters["k0"], 0.0 * u.kcal / u.mol)
-        assert u.allclose_units(parameters["k1"], 0.416955197548017 * u.kcal / u.mol)
-        assert u.allclose_units(parameters["k2"], -0.0579667482245528 * u.kcal / u.mol)
-        assert u.allclose_units(parameters["k3"], 0.37345529632637 * u.kcal / u.mol)
+        assert u.allclose_units(
+            parameters["k1"], 0.416955197548017 * u.kcal / u.mol
+        )
+        assert u.allclose_units(
+            parameters["k2"], -0.0579667482245528 * u.kcal / u.mol
+        )
+        assert u.allclose_units(
+            parameters["k3"], 0.37345529632637 * u.kcal / u.mol
+        )
         assert u.allclose_units(parameters["k4"], 0.0 * u.kcal / u.mol)
         assert u.allclose_units(parameters["k5"], 0.0 * u.kcal / u.mol)
 
@@ -218,7 +231,9 @@ class TestTwoPropanolMIEFF(BaseTest):
 class TestListParameters(BaseTest):
     @pytest.fixture(scope="session")
     def propanol_ua_mie_list(self):
-        propanol_ua_mie_path = get_test_file_path("propanol_Mie_ua_list_wildcards.xml")
+        propanol_ua_mie_path = get_test_file_path(
+            "propanol_Mie_ua_list_wildcards.xml"
+        )
         return GMSOFFs().load(propanol_ua_mie_path).to_gmso_ff()
 
     def test_dihedral_params(self, propanol_ua_mie_list):

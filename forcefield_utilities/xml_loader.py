@@ -2,7 +2,6 @@ import abc
 from pathlib import Path
 from typing import Union
 
-from gmso.utils.ff_utils import _validate_schema as validate_gmso_schema
 from lxml import etree
 
 from forcefield_utilities.foyer_xml import ForceField as FoyerForceField
@@ -12,6 +11,7 @@ from forcefield_utilities.utils import (
     deprecate_kwargs,
     get_package_file_path,
 )
+from gmso.utils.ff_utils import _validate_schema as validate_gmso_schema
 
 custom_forcefields = {}
 
