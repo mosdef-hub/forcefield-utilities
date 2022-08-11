@@ -18,4 +18,4 @@ dependencies:
   - ele
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
-      - "--editable=git+https://github.com/mosdef-hub/gmso.git#egg=gmso"
+      - "--editable=git+https://github.com/mosdef-hub/gmso.git@develop#egg=gmso"
