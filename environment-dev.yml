@@ -9,6 +9,7 @@ dependencies:
   - pre-commit
   - pip
   - gmso
+  - unyt <= 2.8
   - pydantic
   - lxml
   - pip:
