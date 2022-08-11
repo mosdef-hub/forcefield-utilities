@@ -8,7 +8,8 @@ dependencies:
   - pytest-cov
   - pre-commit
   - pip
-  - unyt=2.9.0
+  - gmso
+  - unyt <= 2.8
   - pydantic
   - lxml
   - boltons
