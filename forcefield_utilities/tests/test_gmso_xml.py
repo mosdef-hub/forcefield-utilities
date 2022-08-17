@@ -259,3 +259,11 @@ class TestListParameters(BaseTest):
             params_wildcards_dihedrals["k"],
             [0.0, 0.69551975, -0.023, 0.3734553, 0.0, 0.0] * u.kcal / u.mol,
         )
+
+
+class TestDuplicateEntries:
+    def test_value_error(self):
+        with pytest.raises(ValueError):
+            GMSOFFs().load(
+                get_test_file_path("propanol_Mie_ua_duplicate_entries.xml")
+            )
