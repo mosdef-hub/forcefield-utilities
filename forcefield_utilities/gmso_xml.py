@@ -23,6 +23,7 @@ def get_identifiers_registry():
         "AngleTypes": set(),
         "DihedralTypes": set(),
         "ImproperTypes": set(),
+        "PariPotentialTypes": set(),
     }
 
 
@@ -38,6 +39,7 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
         for_type == "BondTypes"
         or for_type == "AngleTypes"
         or for_type == "DihedralTypes"
+        or for_type == "PairPotentialTypes"
     ):
         registry.add(identifier)
         registry.add(tuple(reversed(identifier)))
@@ -794,7 +796,7 @@ class PairPotentialType(GMSOXMLTag):
 
     @classmethod
     def load_from_etree(cls, root):
-        attribs = root.attrib
+        attribs = pad_with_wildcards(root.attrib, 2)
         children = []
         for el in root.iterchildren():
             children.append(Parameters.load_from_etree(el))
@@ -819,14 +821,21 @@ class PairPotentialTypes(GMSOXMLChild):
     )
 
     @classmethod
-    def load_from_etree(cls, root):
+    def load_from_etree(cls, root, existing):
         attribs = root.attrib
         children = []
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "PairPotentialType":
-                children.append(PairPotentialType.load_from_etree(el))
+                pptype = PairPotentialType.load_from_etree(el)
+                identifier = tuple(
+                    [pptype.class1, pptype.class2]
+                    if pptype.class1
+                    else [pptype.type1, pptype.type2]
+                )
+                register_identifiers(existing, identifier, "PairPotentialTypes")
+                children.append(pptype)
         return cls(children=children, **attribs)
 
 
@@ -972,7 +981,10 @@ class ForceField(GMSOXMLTag):
                     )
                 )
             elif el.tag == "PairPotentialTypes":
-                # ToDo: What constitutes a duplicate for pairpotential type?
-                children.append(PairPotentialTypes.load_from_etree(el))
+                children.append(
+                    PairPotentialTypes.load_from_etree(
+                        el, identifiers_registry["PairPotentialTypes"]
+                    )
+                )
 
         return cls(children=children, **attribs)
