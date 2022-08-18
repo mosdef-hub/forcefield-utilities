@@ -16,6 +16,45 @@ from pydantic import BaseModel, Field
 from forcefield_utilities.utils import pad_with_wildcards
 
 
+def get_identifiers_registry():
+    return {
+        "AtomTypes": set(),
+        "BondTypes": set(),
+        "AngleTypes": set(),
+        "DihedralTypes": set(),
+        "ImproperTypes": set(),
+    }
+
+
+def register_identifiers(registry, identifier, for_type="AtomTypes"):
+    if identifier in registry:
+        raise ValueError(
+            f"Duplicate identifier found for {for_type}: {identifier}"
+        )
+
+    if for_type == "AtomTypes":
+        registry.add(identifier)
+    elif (
+        for_type == "BondTypes"
+        or for_type == "AngleTypes"
+        or for_type == "DihedralTypes"
+    ):
+        registry.add(identifier)
+        registry.add(tuple(reversed(identifier)))
+    elif for_type == "ImproperTypes":
+        (central, second, third, fourth) = identifier
+        mirrors = [
+            (central, second, third, fourth),
+            (central, second, fourth, third),
+            (central, third, second, fourth),
+            (central, third, fourth, second),
+            (central, fourth, second, third),
+            (central, fourth, third, second),
+        ]
+        for mirror in mirrors:
+            registry.add(mirror)
+
+
 @lru_cache(maxsize=128)
 def indep_vars(expr: str, dependent: frozenset) -> Set:
     """Given an expression and dependent variables, return independent variables for it."""
@@ -235,14 +274,17 @@ class AtomTypes(GMSOXMLChild):
         return potentials
 
     @classmethod
-    def load_from_etree(cls, root):
+    def load_from_etree(cls, root, existing):
         attribs = root.attrib
         children = []
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "AtomType":
-                children.append(AtomType.load_from_etree(el))
+                atom_type = AtomType.load_from_etree(el)
+                identifier = atom_type.name
+                register_identifiers(existing, identifier, "AtomTypes")
+                children.append(atom_type)
         return cls(children=children, **attribs)
 
 
@@ -347,10 +389,9 @@ class BondTypes(GMSOXMLChild):
         return potentials
 
     @classmethod
-    def load_from_etree(cls, root):
+    def load_from_etree(cls, root, existing):
         attribs = root.attrib
         children = []
-        identifiers_registry = set()
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
@@ -361,14 +402,8 @@ class BondTypes(GMSOXMLChild):
                     if bond_type.class1
                     else [bond_type.type1, bond_type.type2]
                 )
-                if identifier in identifiers_registry:
-                    raise ValueError(
-                        f"Duplicate entries found for BondType with identifiers {identifier}"
-                    )
-                else:
-                    identifiers_registry.add(identifier)
-                    identifiers_registry.add(tuple(reversed(identifier)))
-                    children.append(bond_type)
+                register_identifiers(existing, identifier, "BondTypes")
+                children.append(bond_type)
 
         return cls(children=children, **attribs)
 
@@ -491,14 +526,21 @@ class AngleTypes(GMSOXMLChild):
         return potentials
 
     @classmethod
-    def load_from_etree(cls, root):
+    def load_from_etree(cls, root, existing):
         attribs = root.attrib
         children = []
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "AngleType":
-                children.append(AngleType.load_from_etree(el))
+                angle_type = AngleType.load_from_etree(el)
+                identifier = tuple(
+                    [angle_type.class1, angle_type.class2, angle_type.class3]
+                    if angle_type.class1
+                    else [angle_type.type1, angle_type.type2, angle_type.type3]
+                )
+                register_identifiers(existing, identifier, "AngleTypes")
+                children.append(angle_type)
         return cls(children=children, **attribs)
 
 
@@ -674,17 +716,41 @@ class TorsionTypes(GMSOXMLChild):
         return potentials
 
     @classmethod
-    def load_from_etree(cls, root):
+    def load_from_etree(cls, root, existing_dihedrals, existing_impropers):
         attribs = root.attrib
         children = []
+        child_loaders = {
+            "DihedralType": DihedralType,
+            "ImproperType": ImproperType,
+        }
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
-            elif el.tag == "DihedralType":
-                children.append(DihedralType.load_from_etree(el))
-            elif el.tag == "ImproperType":
-                child = ImproperType.load_from_etree(el)
-                children.append(child)
+            elif el.tag == "DihedralType" or el.tag == "ImproperType":
+                tor_type = child_loaders[el.tag].load_from_etree(el)
+                identifier = tuple(
+                    [
+                        tor_type.class1,
+                        tor_type.class2,
+                        tor_type.class3,
+                        tor_type.class4,
+                    ]
+                    if tor_type.class1
+                    else [
+                        tor_type.type1,
+                        tor_type.type2,
+                        tor_type.type3,
+                        tor_type.type4,
+                    ]
+                )
+                register_identifiers(
+                    existing_impropers
+                    if el.tag == "ImproperType"
+                    else existing_dihedrals,
+                    identifier,
+                    el.tag + "s",
+                )
+                children.append(tor_type)
 
         return cls(children=children, **attribs)
 
@@ -867,19 +933,46 @@ class ForceField(GMSOXMLTag):
     def load_from_etree(cls, root) -> "ForceField":
         attribs = root.attrib
         children = []
+        identifiers_registry = get_identifiers_registry()
         for el in root.iterchildren():
             if el.tag == "FFMetaData":
                 children.append(FFMetaData.load_from_etree(el))
             if el.tag == "AtomTypes":
-                children.append(AtomTypes.load_from_etree(el))
+                children.append(
+                    AtomTypes.load_from_etree(
+                        el, identifiers_registry["AtomTypes"]
+                    )
+                )
             elif el.tag == "BondTypes":
-                children.append(BondTypes.load_from_etree(el))
+                children.append(
+                    BondTypes.load_from_etree(
+                        el, identifiers_registry["BondTypes"]
+                    )
+                )
             elif el.tag == "AngleTypes":
-                children.append(AngleTypes.load_from_etree(el))
+                children.append(
+                    AngleTypes.load_from_etree(
+                        el, identifiers_registry["AngleTypes"]
+                    )
+                )
             elif el.tag == "DihedralTypes":
-                children.append(DihedralTypes.load_from_etree(el))
+                children.append(
+                    DihedralTypes.load_from_etree(
+                        el,
+                        identifiers_registry["DihedralTypes"],
+                        identifiers_registry["ImproperTypes"],
+                    )
+                )
             elif el.tag == "ImproperTypes":
-                children.append(ImproperTypes.load_from_etree(el))
+                children.append(
+                    ImproperTypes.load_from_etree(
+                        el,
+                        identifiers_registry["DihedralTypes"],
+                        identifiers_registry["ImproperTypes"],
+                    )
+                )
             elif el.tag == "PairPotentialTypes":
+                # ToDo: What constitutes a duplicate for pairpotential type?
                 children.append(PairPotentialTypes.load_from_etree(el))
+
         return cls(children=children, **attribs)

@@ -262,8 +262,40 @@ class TestListParameters(BaseTest):
 
 
 class TestDuplicateEntries:
-    def test_value_error(self):
+    def test_value_error_bond_types(self):
         with pytest.raises(ValueError):
             GMSOFFs().load(
-                get_test_file_path("propanol_Mie_ua_duplicate_entries.xml")
+                get_test_file_path(
+                    "propanol_Mie_ua_duplicate_entries_bond_type.xml"
+                )
+            )
+
+    def test_value_error_angle_types(self):
+        with pytest.raises(
+            ValueError, match=r"Duplicate identifier found for AngleTypes.*"
+        ):
+            GMSOFFs().load(
+                get_test_file_path(
+                    "propanol_Mie_ua_duplicate_entries_angle_type.xml"
+                )
+            )
+
+    def test_value_error_dihedral_types(self):
+        with pytest.raises(
+            ValueError, match=r"Duplicate identifier found for DihedralTypes.*"
+        ):
+            GMSOFFs().load(
+                get_test_file_path(
+                    "propanol_Mie_ua_duplicate_entries_dihedral_type.xml"
+                )
+            )
+
+    def test_value_error_improper_types(self):
+        with pytest.raises(
+            ValueError, match=r"Duplicate identifier found for ImproperTypes.*"
+        ):
+            GMSOFFs().load(
+                get_test_file_path(
+                    "propanol_Mie_ua_duplicate_entries_improper_type.xml"
+                )
             )
