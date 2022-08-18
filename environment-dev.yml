@@ -8,9 +8,6 @@ dependencies:
   - pytest-cov
   - pre-commit
   - pip
-  - gmso
-  - unyt <= 2.8
-  - pydantic
-  - lxml
+  - gmso >= 0.9.0
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
