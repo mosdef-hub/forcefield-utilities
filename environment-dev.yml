@@ -8,7 +8,8 @@ dependencies:
   - pytest-cov
   - pre-commit
   - pip
-  - unyt=2.9.0
+  - gmso
+  - unyt <= 2.8
   - pydantic
   - lxml
   - boltons
@@ -17,4 +18,4 @@ dependencies:
   - ele
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
-      - "--editable=git+https://github.com/mosdef-hub/gmso.git#egg=gmso"
+      - "--editable=git+https://github.com/mosdef-hub/gmso.git@develop#egg=gmso"

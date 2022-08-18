@@ -350,11 +350,26 @@ class BondTypes(GMSOXMLChild):
     def load_from_etree(cls, root):
         attribs = root.attrib
         children = []
+        identifiers_registry = set()
         for el in root.iterchildren():
             if el.tag == "ParametersUnitDef":
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "BondType":
-                children.append(BondType.load_from_etree(el))
+                bond_type = BondType.load_from_etree(el)
+                identifier = tuple(
+                    [bond_type.class1, bond_type.class2]
+                    if bond_type.class1
+                    else [bond_type.type1, bond_type.type2]
+                )
+                if identifier in identifiers_registry:
+                    raise ValueError(
+                        f"Duplicate entries found for BondType with identifiers {identifier}"
+                    )
+                else:
+                    identifiers_registry.add(identifier)
+                    identifiers_registry.add(tuple(reversed(identifier)))
+                    children.append(bond_type)
+
         return cls(children=children, **attribs)
 
 
