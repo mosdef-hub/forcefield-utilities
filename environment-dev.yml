@@ -4,18 +4,10 @@ channels:
 dependencies:
   - bump2version
   - foyer
-  - gmso>=0.9.0
   - pytest
   - pytest-cov
   - pre-commit
   - pip
-  - gmso
-  - unyt<=2.8
-  - pydantic
-  - lxml
-  - boltons
-  - numpy
-  - sympy
-  - ele
+  - gmso >= 0.9.0
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
