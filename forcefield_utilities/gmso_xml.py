@@ -13,15 +13,20 @@ from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from pydantic import BaseModel, Field
 
+# TODO: add custom unyt registry
+from unyt import Unit, UnitRegistry
+
 from forcefield_utilities.utils import pad_with_wildcards
 
-# TODO: add custom unyt registry
-from unyt import UnitRegistry, Unit
 reg = UnitRegistry()
 dim = u.dimensions.current_mks * u.dimensions.time
-conversion = -1*getattr(u.physical_constants, "electron_charge").value #-1 due to sign of constant
-reg.add("electron_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}")
-conversion = 1*getattr(u.physical_constants, "boltzmann_constant_mks").value
+conversion = (
+    -1 * getattr(u.physical_constants, "electron_charge").value
+)  # -1 due to sign of constant
+reg.add(
+    "electron_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}"
+)
+conversion = 1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
 dim = u.dimensions.energy / u.dimensions.temperature
 reg.add("kb", base_value=conversion, dimensions=dim, tex_repr=r"\rm{kb}")
 
@@ -883,7 +888,9 @@ class PairPotentialTypes(GMSOXMLChild):
                     pairpotential_type.class2,
                 )
 
-            pairpotential_type_dict["parameters"] = pairpotential_type.parameters(units)
+            pairpotential_type_dict[
+                "parameters"
+            ] = pairpotential_type.parameters(units)
             pairpotential_type_dict["independent_variables"] = indep_vars(
                 pairpotential_type_dict["expression"],
                 frozenset(pairpotential_type_dict["parameters"]),
@@ -892,11 +899,15 @@ class PairPotentialTypes(GMSOXMLChild):
             gmso_pairpotential_type = GMSOBondType(**pairpotential_type_dict)
             if gmso_pairpotential_type.member_types:
                 potentials["pairpotential_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_pairpotential_type.member_types)
+                    FF_TOKENS_SEPARATOR.join(
+                        gmso_pairpotential_type.member_types
+                    )
                 ] = gmso_pairpotential_type
             else:
                 potentials["pairpotential_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_pairpotential_type.member_classes)
+                    FF_TOKENS_SEPARATOR.join(
+                        gmso_pairpotential_type.member_classes
+                    )
                 ] = gmso_pairpotential_type
 
         return potentials
@@ -946,7 +957,6 @@ class FFMetaData(GMSOXMLChild):
             exclude_none=True,
         )
 
-
     def get_default_units(self):
         units_dict = {}
         units = self.children[0].dict(by_alias=True, exclude_none=True)
@@ -962,6 +972,7 @@ class FFMetaData(GMSOXMLChild):
 
         return units_dict
 
+
 def source_units(unit):
     try:
         attach_unit = u.Unit(unit)
@@ -971,7 +982,6 @@ def source_units(unit):
         except u.exceptions.UnitParseError:
             attach_unit = getattr(u.physical_constants, unit)
     return attach_unit
-
 
 
 class ForceField(GMSOXMLTag):

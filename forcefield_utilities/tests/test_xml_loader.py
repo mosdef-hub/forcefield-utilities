@@ -1,5 +1,4 @@
 import pytest
-
 from foyer.forcefield import get_available_forcefield_loaders
 
 from forcefield_utilities.tests.base_test import BaseTest
@@ -18,9 +17,11 @@ class TestXMLLoader(BaseTest):
         return GMSOFFs()
 
     @pytest.mark.skipif(
-    condition="load_GAFF"
-    not in map(lambda func: func.__name__, get_available_forcefield_loaders()),
-    reason="GAFF Plugin is not installed",
+        condition="load_GAFF"
+        not in map(
+            lambda func: func.__name__, get_available_forcefield_loaders()
+        ),
+        reason="GAFF Plugin is not installed",
     )
     def test_load_gaff(self, foyer_xml_loader):
         foyer_xml_loader.get_ff("gaff")
