@@ -15,6 +15,16 @@ from pydantic import BaseModel, Field
 
 from forcefield_utilities.utils import pad_with_wildcards
 
+# TODO: add custom unyt registry
+from unyt import UnitRegistry, Unit
+reg = UnitRegistry()
+dim = u.dimensions.current_mks * u.dimensions.time
+conversion = -1*getattr(u.physical_constants, "electron_charge").value #-1 due to sign of constant
+reg.add("electron_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}")
+conversion = 1*getattr(u.physical_constants, "boltzmann_constant_mks").value
+dim = u.dimensions.energy / u.dimensions.temperature
+reg.add("kb", base_value=conversion, dimensions=dim, tex_repr=r"\rm{kb}")
+
 
 def get_identifiers_registry():
     return {
@@ -23,7 +33,7 @@ def get_identifiers_registry():
         "AngleTypes": set(),
         "DihedralTypes": set(),
         "ImproperTypes": set(),
-        "PariPotentialTypes": set(),
+        "PairPotentialTypes": set(),
     }
 
 
@@ -60,7 +70,8 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
 @lru_cache(maxsize=128)
 def indep_vars(expr: str, dependent: frozenset) -> Set:
     """Given an expression and dependent variables, return independent variables for it."""
-    return sympy.sympify(expr).free_symbols - dependent
+    dependent_symbols = frozenset(map(lambda x: sympy.symbols(x), dependent))
+    return sympy.sympify(expr).free_symbols - dependent_symbols
 
 
 class GMSOXMLTag(BaseModel):
@@ -228,7 +239,7 @@ class AtomTypes(GMSOXMLChild):
             lambda c: isinstance(c, ParametersUnitDef), self.children
         )
         units = {
-            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            parameter_unit.parameter: u.Unit(parameter_unit.unit, registry=reg)
             for parameter_unit in parameters_units
         }
 
@@ -838,6 +849,58 @@ class PairPotentialTypes(GMSOXMLChild):
                 children.append(pptype)
         return cls(children=children, **attribs)
 
+    def to_gmso_potentials(self, default_units):
+        potentials = {"pairpotential_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for pairpotential_type in filter(
+            lambda c: isinstance(c, PairPotentialType), self.children
+        ):
+            pairpotential_type_dict = pairpotential_type.dict(
+                by_alias=True,
+                exclude={"children", "type1", "type2", "class1", "class2"},
+                exclude_none=True,
+            )
+
+            if "expression" not in pairpotential_type_dict:
+                pairpotential_type_dict["expression"] = self.expression
+
+            if pairpotential_type.type1 and pairpotential_type.type2:
+                pairpotential_type_dict["member_types"] = (
+                    pairpotential_type.type1,
+                    pairpotential_type.type2,
+                )
+
+            elif pairpotential_type.class1 and pairpotential_type.class2:
+                pairpotential_type_dict["member_classes"] = (
+                    pairpotential_type.class1,
+                    pairpotential_type.class2,
+                )
+
+            pairpotential_type_dict["parameters"] = pairpotential_type.parameters(units)
+            pairpotential_type_dict["independent_variables"] = indep_vars(
+                pairpotential_type_dict["expression"],
+                frozenset(pairpotential_type_dict["parameters"]),
+            )
+
+            gmso_pairpotential_type = GMSOBondType(**pairpotential_type_dict)
+            if gmso_pairpotential_type.member_types:
+                potentials["pairpotential_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_pairpotential_type.member_types)
+                ] = gmso_pairpotential_type
+            else:
+                potentials["pairpotential_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_pairpotential_type.member_classes)
+                ] = gmso_pairpotential_type
+
+        return potentials
+
 
 class Units(GMSOXMLTag):
     energy: Optional[str] = Field(None, alias="energy")
@@ -883,16 +946,32 @@ class FFMetaData(GMSOXMLChild):
             exclude_none=True,
         )
 
+
     def get_default_units(self):
         units_dict = {}
         units = self.children[0].dict(by_alias=True, exclude_none=True)
         for name, unit in units.items():
-            try:
-                units_dict[name] = u.Unit(unit)
-            except u.exceptions.UnitParseError:
-                units_dict[name] = getattr(u.physical_constants, unit)
+            unit_object = source_units(unit)
+            if unit_object:
+                units_dict[name] = unit_object
+            else:
+                raise u.exceptions.UnitParseError(
+                    f"Unit {unit} with name {name} in the forcefield {self.name} cannot be handled. \
+                    Please consider adding it to the unit registry."
+                )
 
         return units_dict
+
+def source_units(unit):
+    try:
+        attach_unit = u.Unit(unit)
+    except u.exceptions.UnitParseError:
+        try:
+            attach_unit = Unit("electron_charge", registry=reg)
+        except u.exceptions.UnitParseError:
+            attach_unit = getattr(u.physical_constants, unit)
+    return attach_unit
+
 
 
 class ForceField(GMSOXMLTag):
@@ -916,6 +995,7 @@ class ForceField(GMSOXMLTag):
             filter(lambda child: isinstance(child, FFMetaData), self.children)
         ).pop()
         default_units = metadata.get_default_units()
+        ff.units = default_units
         ff.scaling_factors = metadata.gmso_scaling_factors()
         ff.combining_rule = metadata.combining_rule
         remaining_children = filter(
