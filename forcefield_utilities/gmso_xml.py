@@ -10,6 +10,7 @@ from gmso.core.atom_type import AtomType as GMSOAtomType
 from gmso.core.bond_type import BondType as GMSOBondType
 from gmso.core.dihedral_type import DihedralType as GMSODihedralType
 from gmso.core.improper_type import ImproperType as GMSOImproperType
+from gmso.core.pairpotential_type import PairPotentialType as GMSOPairPotentialType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
 from pydantic import BaseModel, Field
 
@@ -897,7 +898,7 @@ class PairPotentialTypes(GMSOXMLChild):
                 frozenset(pairpotential_type_dict["parameters"]),
             )
 
-            gmso_pairpotential_type = GMSOBondType(**pairpotential_type_dict)
+            gmso_pairpotential_type = GMSOPairPotentialType(**pairpotential_type_dict)
             if gmso_pairpotential_type.member_types:
                 potentials["pairpotential_types"][
                     FF_TOKENS_SEPARATOR.join(
