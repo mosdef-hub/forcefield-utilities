@@ -20,9 +20,14 @@ from forcefield_utilities.utils import pad_with_wildcards
 
 reg = UnitRegistry()
 dim = u.dimensions.current_mks * u.dimensions.time
-conversion = 1*getattr(u.physical_constants, "elementary_charge").value
-reg.add("elementary_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}")
-conversion = 1*getattr(u.physical_constants, "boltzmann_constant_mks").value
+conversion = 1 * getattr(u.physical_constants, "elementary_charge").value
+reg.add(
+    "elementary_charge",
+    base_value=conversion,
+    dimensions=dim,
+    tex_repr=r"\rm{e}",
+)
+conversion = 1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
 dim = u.dimensions.energy / u.dimensions.temperature
 reg.add("kb", base_value=conversion, dimensions=dim, tex_repr=r"\rm{kb}")
 
