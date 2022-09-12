@@ -19,8 +19,8 @@ from forcefield_utilities.utils import pad_with_wildcards
 from unyt import UnitRegistry, Unit
 reg = UnitRegistry()
 dim = u.dimensions.current_mks * u.dimensions.time
-conversion = -1*getattr(u.physical_constants, "electron_charge").value #-1 due to sign of constant
-reg.add("electron_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}")
+conversion = 1*getattr(u.physical_constants, "elementary_charge").value #-1 due to sign of constant
+reg.add("elementary_charge", base_value=conversion, dimensions=dim, tex_repr=r"\rm{e}")
 conversion = 1*getattr(u.physical_constants, "boltzmann_constant_mks").value
 dim = u.dimensions.energy / u.dimensions.temperature
 reg.add("kb", base_value=conversion, dimensions=dim, tex_repr=r"\rm{kb}")
@@ -964,7 +964,7 @@ class FFMetaData(GMSOXMLChild):
 
 def source_units(unit):
     try:
-        attach_unit = u.Unit(unit)
+        attach_unit = u.Unit(unit, registry=reg)
     except u.exceptions.UnitParseError:
         try:
             attach_unit = Unit("electron_charge", registry=reg)
