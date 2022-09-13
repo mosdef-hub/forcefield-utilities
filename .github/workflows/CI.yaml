@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ macOS-latest, ubuntu-latest ]
-        python-version: [ 3.7, 3.8, 3.9 ]
+        python-version: ["3.8", "3.9"]
     defaults:
       run:
         shell: bash -l {0}
@@ -43,3 +43,39 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
+
+  bleeding-edge-test:
+    if: github.event.pull_request.draft == false
+    name: Bleeding Edge mosdef Tests for ffutils
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout Branch / Pull Request
+
+      - name: Install Mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: environment-dev.yml
+          extra-specs: |
+            python=3.8
+
+      - name: Clone GMSO
+        run: |
+          git clone https://github.com/mosdef-hub/gmso.git
+
+      - name: Update Environment with mbuild/foyer/ffutils Dependencies
+        run: |
+          micromamba update --name gmso-dev --file gmso/environment-dev.yml
+
+      - name: Install Packages from Source
+        run: |
+          pip install -e gmso
+          pip install -e .
+
+      - name: Run Bleeding Edge Tests
+        run: |
+          python -m pytest -v --color yes --pyargs forcefield_utilities
