@@ -106,7 +106,6 @@ class TestXMLParams(BaseTest):
         for harmonic_bond in FoyerFFs.gaff.iterate_on(
             children_type="HarmonicBondForce"
         ):
-
             assert harmonic_bond.dict(
                 exclude={"class1", "class2"}, exclude_none=True
             ) == gaff_foyer.get_parameters(
