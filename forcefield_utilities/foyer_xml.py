@@ -14,9 +14,13 @@ from gmso.lib.potential_templates import (
     PotentialTemplateLibrary,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
-from pydantic import BaseModel, Field
 
 from forcefield_utilities.parameters_transformer import ParametersTransformer
+
+try:
+    from pydantic.v1 import BaseModel, Field
+except ImportError:
+    from pydantic import BaseModel, Field
 
 __all__ = ["ForceField"]
 

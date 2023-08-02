@@ -14,12 +14,16 @@ from gmso.core.pairpotential_type import (
     PairPotentialType as GMSOPairPotentialType,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
-from pydantic import BaseModel, Field
 
 # TODO: add custom unyt registry
 from unyt import Unit, UnitRegistry
 
 from forcefield_utilities.utils import pad_with_wildcards
+
+try:
+    from pydantic.v1 import BaseModel, Field
+except ImportError:
+    from pydantic import BaseModel, Field
 
 reg = UnitRegistry()
 dim = u.dimensions.current_mks * u.dimensions.time
