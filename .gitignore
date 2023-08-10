@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.pymon
+test-output.xml
+src/
+
 
 # C extensions
 *.so
