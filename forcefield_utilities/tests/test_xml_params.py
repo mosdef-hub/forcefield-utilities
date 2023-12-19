@@ -10,7 +10,7 @@ class TestXMLParams(BaseTest):
         for atom_type in FoyerFFs.get_ff("oplsaa").iterate_on(
             children_type="NonbondedForce"
         ):
-            assert atom_type.dict(
+            assert atom_type.model_dump(
                 exclude_none=True, exclude={"atom_type"}
             ) == oplsaa_foyer.get_parameters(
                 group="atoms", key=atom_type.atom_type
@@ -24,7 +24,7 @@ class TestXMLParams(BaseTest):
                 harmonic_bond.class1 not in missing_atom_classes_oplsaa
                 and harmonic_bond.class2 not in missing_atom_classes_oplsaa
             ):
-                assert harmonic_bond.dict(
+                assert harmonic_bond.model_dump(
                     exclude={"class1", "class2"}, exclude_none=True
                 ) == oplsaa_foyer.get_parameters(
                     group="harmonic_bonds",
@@ -43,7 +43,7 @@ class TestXMLParams(BaseTest):
                 and harmonic_angle.class2 not in missing_atom_classes_oplsaa
                 and harmonic_angle.class3 not in missing_atom_classes_oplsaa
             ):
-                angle_params = harmonic_angle.dict(
+                angle_params = harmonic_angle.model_dump(
                     exclude={"class1", "class2", "class3"}, exclude_none=True
                 )
                 angle_params["theta"] = angle_params.pop("angle")
@@ -79,7 +79,7 @@ class TestXMLParams(BaseTest):
                     ],
                     keys_are_atom_classes=True,
                 )
-                xml_params = rb_torsion.dict(
+                xml_params = rb_torsion.model_dump(
                     include={"c0", "c1", "c2", "c3", "c4", "c5"}
                 )
                 assert xml_params == ff_params
@@ -92,7 +92,7 @@ class TestXMLParams(BaseTest):
         for atom_type in FoyerFFs.gaff.iterate_on(
             children_type="NonbondedForce"
         ):
-            assert atom_type.dict(
+            assert atom_type.model_dump(
                 exclude_none=True, exclude={"atom_type"}
             ) == gaff_foyer.get_parameters(
                 group="atoms", key=atom_type.atom_type
@@ -106,7 +106,7 @@ class TestXMLParams(BaseTest):
         for harmonic_bond in FoyerFFs.gaff.iterate_on(
             children_type="HarmonicBondForce"
         ):
-            assert harmonic_bond.dict(
+            assert harmonic_bond.model_dump(
                 exclude={"class1", "class2"}, exclude_none=True
             ) == gaff_foyer.get_parameters(
                 group="harmonic_bonds",
@@ -122,7 +122,7 @@ class TestXMLParams(BaseTest):
         for harmonic_angle in FoyerFFs.gaff.iterate_on(
             children_type="HarmonicAngleForce"
         ):
-            angle_params = harmonic_angle.dict(
+            angle_params = harmonic_angle.model_dump(
                 exclude={"class1", "class2", "class3"}, exclude_none=True
             )
             angle_params["theta"] = angle_params.pop("angle")
@@ -161,7 +161,7 @@ class TestXMLParams(BaseTest):
                     key=key,
                     keys_are_atom_classes=True,
                 )
-                xml_params = periodic_torsion.dict(
+                xml_params = periodic_torsion.model_dump(
                     include={"periodicity", "phase", "k"}
                 )
                 assert xml_params == ff_params

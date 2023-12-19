@@ -17,10 +17,7 @@ from gmso.utils._constants import FF_TOKENS_SEPARATOR
 
 from forcefield_utilities.parameters_transformer import ParametersTransformer
 
-try:
-    from pydantic.v1 import BaseModel, Field
-except ImportError:
-    from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 __all__ = ["ForceField"]
 
@@ -40,16 +37,16 @@ class registers_loader:
 
 
 class FoyerXMLTag(BaseModel):
-    """The Base Foyer XML Class. Used for convience"""
+    """The Base Foyer XML Class. Used for convience."""
+
+    model_config = ConfigDict(
+        populate_by_name = True,
+        frozen = True,
+        arbitrary_types_allowed = True,
+    )
 
     def to_etree(self):
         pass
-
-    class Config:
-        allow_population_by_field_name = True
-        allow_mutation = False
-        arbitrary_types_allowed = True
-
 
 class ForceFieldChild(FoyerXMLTag):
     """Any XML Child of <ForceField>"""
@@ -104,7 +101,7 @@ class AtomTypes(ForceFieldChild):
         children = []
         for atom_type in atom_types.iterchildren():
             if atom_type.tag == Type.__name__:
-                children.append(Type.parse_obj(atom_type.attrib))
+                children.append(Type.model_validate(atom_type.attrib))
         return cls(children=children)
 
 
@@ -132,7 +129,7 @@ class Bond(ForceFieldChild):
     k: float = Field(..., description="The k-value of the bond", alias="k")
 
     def parameters(self):
-        return self.dict(include={"length", "k"})
+        return self.model_dump(include={"length", "k"})
 
 
 @registers_loader(name="HarmonicBondForce")
@@ -166,7 +163,7 @@ class HarmonicBondForce(ForceFieldChild):
         children = []
         for bond_type in bonds.iterchildren():
             if bond_type.tag == Bond.__name__:
-                children.append(Bond.parse_obj(bond_type.attrib))
+                children.append(Bond.model_validate(bond_type.attrib))
         return cls(children=children)
 
 
@@ -200,7 +197,7 @@ class Angle(ForceFieldChild):
     k: float = Field(..., description="The k-value of angle", alias="k")
 
     def parameters(self):
-        return self.dict(include={"angle", "k"})
+        return self.model_dump(include={"angle", "k"})
 
 
 @registers_loader(name="HarmonicAngleForce")
@@ -214,7 +211,7 @@ class HarmonicAngleForce(ForceFieldChild):
         children = []
         for angle_type in angles.iterchildren():
             if angle_type.tag == Angle.__name__:
-                children.append(Angle.parse_obj(angle_type.attrib))
+                children.append(Angle.model_validate(angle_type.attrib))
         return cls(children=children)
 
     def to_gmso_potentials(self, children):
@@ -295,7 +292,7 @@ class RBDihedral(Dihedral):
     c5: float = Field(..., description="C5 Parameter", alias="c5")
 
     def parameters(self):
-        return self.dict(include={"c0", "c1", "c2", "c3", "c4", "c5"})
+        return self.model_dump(include={"c0", "c1", "c2", "c3", "c4", "c5"})
 
 
 class RBProper(RBDihedral):
@@ -364,7 +361,7 @@ class RBTorsionForce(ForceFieldChild):
                     f"Tag {dihedral_type.tag} not understood skipping"
                 )
                 continue
-            children.append(Creator.parse_obj(dihedral_type.attrib))
+            children.append(Creator.model_validate(dihedral_type.attrib))
 
         return cls(children=children)
 
@@ -392,7 +389,7 @@ class PeriodicDihedral(Dihedral):
         return xml_dict
 
     def parameters(self):
-        return self.dict(include={"periodicity", "phase", "k"})
+        return self.model_dump(include={"periodicity", "phase", "k"})
 
     @staticmethod
     def periodic_attribs_to_list(attrib):
@@ -423,9 +420,9 @@ class PeriodicDihedral(Dihedral):
         return attrib_dict
 
     @classmethod
-    def parse_obj(cls, obj: Any):
+    def model_validate(cls, obj: Any):
         dict_attribs = cls.periodic_attribs_to_list(obj)
-        return super().parse_obj(dict_attribs)
+        return super().model_validate(dict_attribs)
 
 
 class PeriodicProper(PeriodicDihedral):
@@ -455,7 +452,7 @@ class PeriodicTorsionForce(ForceFieldChild):
                     f"Tag {dihedral_type.tag} not understood skipping"
                 )
                 continue
-            children.append(Creator.parse_obj(dihedral_type.attrib))
+            children.append(Creator.model_validate(dihedral_type.attrib))
 
         return cls(children=children)
 
@@ -515,7 +512,7 @@ class NonBondedAtom(ForceFieldChild):
     )
 
     def parameters(self):
-        return self.dict(include={"charge", "sigma", "epsilon"})
+        return self.model_dump(include={"charge", "sigma", "epsilon"})
 
 
 @registers_loader(name="NonbondedForce")
@@ -575,7 +572,7 @@ class NonBondedForce(ForceFieldChild):
 
         for atom_type in nonbonded_atoms.iterchildren():
             if atom_type.tag == "Atom":
-                children.append(NonBondedAtom.parse_obj(atom_type.attrib))
+                children.append(NonBondedAtom.model_validate(atom_type.attrib))
 
         return cls(
             children=children,

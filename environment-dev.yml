@@ -9,5 +9,6 @@ dependencies:
   - pre-commit
   - pip
   - gmso >= 0.9.0
+  - pydantic >= 2
   - pip:
       - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
