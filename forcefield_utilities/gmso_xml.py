@@ -14,17 +14,18 @@ from gmso.core.pairpotential_type import (
     PairPotentialType as GMSOPairPotentialType,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from pydantic import BaseModel, ConfigDict, Field
 
 # TODO: add custom unyt registry
 from unyt import Unit, UnitRegistry
 
 from forcefield_utilities.utils import pad_with_wildcards
 
-from pydantic import BaseModel, Field, ConfigDict
-
 reg = UnitRegistry()
 charge_dim = u.dimensions.current_mks * u.dimensions.time
-elementary_charge_conversion = 1 * getattr(u.physical_constants, "elementary_charge").value
+elementary_charge_conversion = (
+    1 * getattr(u.physical_constants, "elementary_charge").value
+)
 reg.add(
     "elementary_charge",
     base_value=elementary_charge_conversion,
@@ -33,7 +34,9 @@ reg.add(
 )
 
 kb_dim = u.dimensions.energy / u.dimensions.temperature
-kb_conversion = 1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
+kb_conversion = (
+    1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
+)
 reg.add("kb", base_value=kb_conversion, dimensions=kb_dim, tex_repr=r"\rm{kb}")
 
 
@@ -89,9 +92,9 @@ class GMSOXMLTag(BaseModel):
     """The Base GMSO XML Class. Used for convience."""
 
     model_config = ConfigDict(
-        populate_by_name = True,
-        frozen = True,
-        arbitrary_types_allowed = True,
+        populate_by_name=True,
+        frozen=True,
+        arbitrary_types_allowed=True,
     )
 
     def parameters(self, units=None):
@@ -105,6 +108,7 @@ class GMSOXMLTag(BaseModel):
                     parameter.value * units[parameter.name]
                 )
         return params_dict
+
 
 class GMSOXMLChild(GMSOXMLTag):
     pass
