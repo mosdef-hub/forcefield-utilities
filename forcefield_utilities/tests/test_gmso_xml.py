@@ -66,7 +66,7 @@ class TestEthyleneFF(BaseTest):
 
         assert (
             str(dihedral_type_rb_1.expression)
-            == "c_0 + c_1*cos(psi) + c_2*cos(psi)**2 + c_3*cos(psi)**3 + c_4*cos(psi)**4 + c_5*cos(psi)**5"
+            == "c0 + c1*cos(phi) + c2*cos(phi)**2 + c3*cos(phi)**3 + c4*cos(phi)**4 + c5*cos(phi)**5"
         )
         assert dihedral_type_rb_1.member_types == (
             "opls_144",
@@ -76,12 +76,12 @@ class TestEthyleneFF(BaseTest):
         )
 
         assert dihedral_type_rb_1.parameters == {
-            "c_0": u.unyt_quantity(58.576, "kJ/mol"),
-            "c_1": u.unyt_quantity(0.0, "kJ/mol"),
-            "c_2": u.unyt_quantity(-58.576, "kJ/mol"),
-            "c_3": u.unyt_quantity(0.0, "kJ/mol"),
-            "c_4": u.unyt_quantity(0.0, "kJ/mol"),
-            "c_5": u.unyt_quantity(0.0, "kJ/mol"),
+            "c0": u.unyt_quantity(58.576, "kJ/mol"),
+            "c1": u.unyt_quantity(0.0, "kJ/mol"),
+            "c2": u.unyt_quantity(-58.576, "kJ/mol"),
+            "c3": u.unyt_quantity(0.0, "kJ/mol"),
+            "c4": u.unyt_quantity(0.0, "kJ/mol"),
+            "c5": u.unyt_quantity(0.0, "kJ/mol"),
         }
 
         assert dihedral_type_rb_1.name == "DihedralType-RyckaertBellemans-1"
