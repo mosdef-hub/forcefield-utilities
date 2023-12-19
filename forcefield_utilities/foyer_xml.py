@@ -572,7 +572,9 @@ class NonBondedForce(ForceFieldChild):
 
         for atom_type in nonbonded_atoms.iterchildren():
             if atom_type.tag == "Atom":
-                children.append(NonBondedAtom.model_validate(dict(atom_type.attrib)))
+                children.append(
+                    NonBondedAtom.model_validate(dict(atom_type.attrib))
+                )
         return cls(
             children=children,
             coulomb14scale=coulomb14scale,
