@@ -14,10 +14,9 @@ from gmso.lib.potential_templates import (
     PotentialTemplateLibrary,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from pydantic import BaseModel, ConfigDict, Field
 
 from forcefield_utilities.parameters_transformer import ParametersTransformer
-
-from pydantic import BaseModel, Field, ConfigDict
 
 __all__ = ["ForceField"]
 
@@ -40,13 +39,14 @@ class FoyerXMLTag(BaseModel):
     """The Base Foyer XML Class. Used for convience."""
 
     model_config = ConfigDict(
-        populate_by_name = True,
-        frozen = True,
-        arbitrary_types_allowed = True,
+        populate_by_name=True,
+        frozen=True,
+        arbitrary_types_allowed=True,
     )
 
     def to_etree(self):
         pass
+
 
 class ForceFieldChild(FoyerXMLTag):
     """Any XML Child of <ForceField>"""
