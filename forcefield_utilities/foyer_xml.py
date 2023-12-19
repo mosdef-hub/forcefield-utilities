@@ -101,7 +101,7 @@ class AtomTypes(ForceFieldChild):
         children = []
         for atom_type in atom_types.iterchildren():
             if atom_type.tag == Type.__name__:
-                children.append(Type.model_validate(atom_type.attrib))
+                children.append(Type.model_validate(dict(atom_type.attrib)))
         return cls(children=children)
 
 
@@ -163,7 +163,7 @@ class HarmonicBondForce(ForceFieldChild):
         children = []
         for bond_type in bonds.iterchildren():
             if bond_type.tag == Bond.__name__:
-                children.append(Bond.model_validate(bond_type.attrib))
+                children.append(Bond.model_validate(dict(bond_type.attrib)))
         return cls(children=children)
 
 
@@ -211,7 +211,7 @@ class HarmonicAngleForce(ForceFieldChild):
         children = []
         for angle_type in angles.iterchildren():
             if angle_type.tag == Angle.__name__:
-                children.append(Angle.model_validate(angle_type.attrib))
+                children.append(Angle.model_validate(dict(angle_type.attrib)))
         return cls(children=children)
 
     def to_gmso_potentials(self, children):
@@ -361,7 +361,7 @@ class RBTorsionForce(ForceFieldChild):
                     f"Tag {dihedral_type.tag} not understood skipping"
                 )
                 continue
-            children.append(Creator.model_validate(dihedral_type.attrib))
+            children.append(Creator.model_validate(dict(dihedral_type.attrib)))
 
         return cls(children=children)
 
@@ -452,7 +452,7 @@ class PeriodicTorsionForce(ForceFieldChild):
                     f"Tag {dihedral_type.tag} not understood skipping"
                 )
                 continue
-            children.append(Creator.model_validate(dihedral_type.attrib))
+            children.append(Creator.model_validate(dict(dihedral_type.attrib)))
 
         return cls(children=children)
 
@@ -572,8 +572,7 @@ class NonBondedForce(ForceFieldChild):
 
         for atom_type in nonbonded_atoms.iterchildren():
             if atom_type.tag == "Atom":
-                children.append(NonBondedAtom.model_validate(atom_type.attrib))
-
+                children.append(NonBondedAtom.model_validate(dict(atom_type.attrib)))
         return cls(
             children=children,
             coulomb14scale=coulomb14scale,
