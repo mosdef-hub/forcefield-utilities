@@ -14,29 +14,30 @@ from gmso.core.pairpotential_type import (
     PairPotentialType as GMSOPairPotentialType,
 )
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from pydantic import BaseModel, ConfigDict, Field
 
 # TODO: add custom unyt registry
 from unyt import Unit, UnitRegistry
 
 from forcefield_utilities.utils import pad_with_wildcards
 
-try:
-    from pydantic.v1 import BaseModel, Field
-except ImportError:
-    from pydantic import BaseModel, Field
-
 reg = UnitRegistry()
-dim = u.dimensions.current_mks * u.dimensions.time
-conversion = 1 * getattr(u.physical_constants, "elementary_charge").value
+charge_dim = u.dimensions.current_mks * u.dimensions.time
+elementary_charge_conversion = (
+    1 * getattr(u.physical_constants, "elementary_charge").value
+)
 reg.add(
     "elementary_charge",
-    base_value=conversion,
-    dimensions=dim,
+    base_value=elementary_charge_conversion,
+    dimensions=charge_dim,
     tex_repr=r"\rm{e}",
 )
-conversion = 1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
-dim = u.dimensions.energy / u.dimensions.temperature
-reg.add("kb", base_value=conversion, dimensions=dim, tex_repr=r"\rm{kb}")
+
+kb_dim = u.dimensions.energy / u.dimensions.temperature
+kb_conversion = (
+    1 * getattr(u.physical_constants, "boltzmann_constant_mks").value
+)
+reg.add("kb", base_value=kb_conversion, dimensions=kb_dim, tex_repr=r"\rm{kb}")
 
 
 def get_identifiers_registry():
@@ -88,6 +89,14 @@ def indep_vars(expr: str, dependent: frozenset) -> Set:
 
 
 class GMSOXMLTag(BaseModel):
+    """The Base GMSO XML Class. Used for convience."""
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        frozen=True,
+        arbitrary_types_allowed=True,
+    )
+
     def parameters(self, units=None):
         params = self.children[0]
         params_dict = {}
@@ -99,10 +108,6 @@ class GMSOXMLTag(BaseModel):
                     parameter.value * units[parameter.name]
                 )
         return params_dict
-
-    class Config:
-        arbitrary_types_allowed = True
-        allow_population_by_field_name = True
 
 
 class GMSOXMLChild(GMSOXMLTag):
@@ -259,7 +264,7 @@ class AtomTypes(GMSOXMLChild):
         for atom_type in filter(
             lambda c: isinstance(c, AtomType), self.children
         ):
-            atom_type_dict = atom_type.dict(
+            atom_type_dict = atom_type.model_dump(
                 by_alias=True,
                 exclude={"children", "element"},
                 exclude_none=True,
@@ -375,7 +380,7 @@ class BondTypes(GMSOXMLChild):
         for bond_type in filter(
             lambda c: isinstance(c, BondType), self.children
         ):
-            bond_type_dict = bond_type.dict(
+            bond_type_dict = bond_type.model_dump(
                 by_alias=True,
                 exclude={"children", "type1", "type2", "class1", "class2"},
                 exclude_none=True,
@@ -503,7 +508,7 @@ class AngleTypes(GMSOXMLChild):
         for angle_type in filter(
             lambda c: isinstance(c, AngleType), self.children
         ):
-            angle_type_dict = angle_type.dict(
+            angle_type_dict = angle_type.model_dump(
                 by_alias=True,
                 exclude={
                     "children",
@@ -673,7 +678,7 @@ class TorsionTypes(GMSOXMLChild):
         for torsion_type in filter(
             lambda c: isinstance(c, (DihedralType, ImproperType)), self.children
         ):
-            torsion_dict = torsion_type.dict(
+            torsion_dict = torsion_type.model_dump(
                 by_alias=True,
                 exclude={
                     "children",
@@ -875,7 +880,7 @@ class PairPotentialTypes(GMSOXMLChild):
         for pairpotential_type in filter(
             lambda c: isinstance(c, PairPotentialType), self.children
         ):
-            pairpotential_type_dict = pairpotential_type.dict(
+            pairpotential_type_dict = pairpotential_type.model_dump(
                 by_alias=True,
                 exclude={"children", "type1", "type2", "class1", "class2"},
                 exclude_none=True,
@@ -962,14 +967,14 @@ class FFMetaData(GMSOXMLChild):
         return cls(children=children, **attribs)
 
     def gmso_scaling_factors(self):
-        return self.dict(
+        return self.model_dump(
             include={"electrostatics14Scale", "nonBonded14Scale"},
             exclude_none=True,
         )
 
     def get_default_units(self):
         units_dict = {}
-        units = self.children[0].dict(by_alias=True, exclude_none=True)
+        units = self.children[0].model_dump(by_alias=True, exclude_none=True)
         for name, unit in units.items():
             unit_object = source_units(unit)
             if unit_object:
