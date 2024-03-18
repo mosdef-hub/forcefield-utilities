@@ -775,9 +775,11 @@ class TorsionTypes(GMSOXMLChild):
                     ]
                 )
                 register_identifiers(
-                    existing_impropers
-                    if el.tag == "ImproperType"
-                    else existing_dihedrals,
+                    (
+                        existing_impropers
+                        if el.tag == "ImproperType"
+                        else existing_dihedrals
+                    ),
                     identifier,
                     el.tag + "s",
                 )
@@ -901,9 +903,9 @@ class PairPotentialTypes(GMSOXMLChild):
                     pairpotential_type.class2,
                 )
 
-            pairpotential_type_dict[
-                "parameters"
-            ] = pairpotential_type.parameters(units)
+            pairpotential_type_dict["parameters"] = (
+                pairpotential_type.parameters(units)
+            )
             pairpotential_type_dict["independent_variables"] = indep_vars(
                 pairpotential_type_dict["expression"],
                 frozenset(pairpotential_type_dict["parameters"]),
