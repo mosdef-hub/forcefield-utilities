@@ -68,9 +68,11 @@ class TestXMLParams(BaseTest):
                 and rb_torsion.class4 not in missing_atom_classes_oplsaa
             ):
                 ff_params = oplsaa_foyer.get_parameters(
-                    group="rb_propers"
-                    if isinstance(rb_torsion, RBProper)
-                    else "rb_impropers",
+                    group=(
+                        "rb_propers"
+                        if isinstance(rb_torsion, RBProper)
+                        else "rb_impropers"
+                    ),
                     key=[
                         rb_torsion.class1,
                         rb_torsion.class2,
@@ -155,9 +157,11 @@ class TestXMLParams(BaseTest):
             ]
             if key != ["", "c", "c1", ""]:
                 ff_params = gaff_foyer.get_parameters(
-                    group="periodic_propers"
-                    if isinstance(periodic_torsion, PeriodicProper)
-                    else "periodic_impropers",
+                    group=(
+                        "periodic_propers"
+                        if isinstance(periodic_torsion, PeriodicProper)
+                        else "periodic_impropers"
+                    ),
                     key=key,
                     keys_are_atom_classes=True,
                 )
