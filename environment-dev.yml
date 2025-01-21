@@ -12,4 +12,4 @@ dependencies:
   - gmso >= 0.9.0
   - pydantic >= 2
   - pip:
-      - git+https://github.com/chrisjonesBSU/antefoyer.git@main 
+      - git+https://github.com/chrisjonesBSU/antefoyer.git@main
