@@ -2,6 +2,7 @@ name: forcefields-dev
 channels:
   - conda-forge
 dependencies:
+  - python >=3.9, <3.13
   - bump2version
   - foyer
   - pytest
@@ -11,4 +12,4 @@ dependencies:
   - gmso >= 0.9.0
   - pydantic >= 2
   - pip:
-      - "--editable=git+https://github.com/rsdefever/antefoyer.git#egg=antefoyer"
+      - git+https://github.com/chrisjonesBSU/antefoyer.git@main
