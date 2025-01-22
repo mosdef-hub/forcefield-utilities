@@ -57,10 +57,10 @@ jobs:
         name: Checkout Branch / Pull Request
 
       - name: Install Mamba
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment-dev.yml
-          extra-specs: |
+          create-args: >-
             python=3.12
 
       - name: Clone GMSO
