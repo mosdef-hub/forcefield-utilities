@@ -3,7 +3,7 @@ requires = ["setuptools>=61.2", "versioningit"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "focefield_utilities"
+name = "forcefield_utilities"
 description = "XML conversion utilities for MoSDeF forcefields."
 readme = "README.md"
 authors = [
