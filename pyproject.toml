@@ -3,7 +3,7 @@ requires = ["setuptools>=61.2", "versioningit"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "focefield_utilities"
+name = "forcefield_utilities"
 description = "XML conversion utilities for MoSDeF forcefields."
 readme = "README.md"
 authors = [
@@ -39,15 +39,5 @@ license-files = ["LICENSE"]
 [tool.setuptools.packages]
 find = {namespaces = false}
 
-[tool.versioningit]
-default-version = "1+unknown"
-
-[tool.versioningit.format]
-distance = "{base_version}+{distance}.{vcs}{rev}"
-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-
-[tool.versioningit.vcs]
-method = "git"
-match = ["*"]
-default-tag = "0.0.0"
+[tool.setuptools.dynamic]
+version = {attr = "forcefield_utilities.__version__"}
