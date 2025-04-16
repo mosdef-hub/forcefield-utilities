@@ -2,14 +2,41 @@ name: forcefields-dev
 channels:
   - conda-forge
 dependencies:
-  - python >=3.9, <3.13
-  - bump2version
-  - foyer
+  - python>=3.9,<=3.12
+  - boltons
+  - numpy=1.26.4
+  - sympy
+  - unyt>=2.9.5
+  - lark>=1.2
+  - lxml
+  - freud>=3.0
+  - intermol
+  - mdtraj
+  - pydantic>=2
+  - networkx
   - pytest
+  - garnett>=0.7.1
+  - openbabel>=3.0.0
+  - openff-toolkit-base >=0.11,<0.16.7
+  - openmm
+  - gsd>=2.9
+  - parmed>=3.4.3
   - pytest-cov
+  - pycifrw
+  - requests
+  - requests-mock
+  - scipy
+  - treelib
+  - codecov
+  - matplotlib
+  - ipywidgets
+  - ele>=0.2.0
   - pre-commit
-  - pip
-  - gmso >= 0.9.0
-  - pydantic >= 2
+  - pandas
+  - symengine
+  - python-symengine
+  - importlib_resources
   - pip:
+      - git+https://github.com/mosdef-hub/gmso.git@main
+      - git+https://github.com/mosdef-hub/foyer.git@main
       - git+https://github.com/chrisjonesBSU/antefoyer.git@main
