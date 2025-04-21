@@ -63,20 +63,8 @@ jobs:
           create-args: >-
             python=3.12
 
-      - name: Clone GMSO
-        run: |
-          git clone https://github.com/mosdef-hub/gmso.git
-          git clone https://github.com/mosdef-hub/foyer.git
-
-      - name: Update Environment with mbuild/foyer/ffutils Dependencies
-        run: |
-          micromamba update --name forcefields-dev --file gmso/environment.yml
-          micromamba update --name forcefields-dev --file foyer/environment.yml
-
       - name: Install Packages from Source
         run: |
-          pip install -e gmso
-          pip install -e foyer
           pip install -e .
 
       - name: Run Bleeding Edge Tests
