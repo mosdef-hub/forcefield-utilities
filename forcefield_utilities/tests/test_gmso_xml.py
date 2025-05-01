@@ -261,6 +261,17 @@ class TestListParameters(BaseTest):
         )
 
 
+class TestVirtualSites(BaseTest):
+    @pytest.fixture(scope="session")
+    def ff_example_one(self):
+        example_one = get_path("ff-example0.xml")
+        return GMSOFFs().load(example_one).to_gmso_ff()
+
+    def test_virtual_type_params(self, ff_example_one):
+
+        assert ff_example_one.virtual_types
+
+
 class TestDuplicateEntries:
     def test_value_error_bond_types(self):
         with pytest.raises(ValueError):
