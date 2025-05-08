@@ -1089,9 +1089,12 @@ class VirtualSiteTypes(GMSOXMLChild):
             potentialDict = {}
             if self.potential_expression:
                 potentialDict["expression"] = self.potential_expression
-            potentialDict["parameters"] = virtual_type.children[0].parameters(
-                units
-            )
+            potentialDict["parameters"] = list(
+                filter(
+                    lambda item: isinstance(item, VirtualPotentialType),
+                    virtual_type.children,
+                )
+            )[0].parameters(units)
             potentialDict["independent_variables"] = indep_vars(
                 potentialDict["expression"],
                 frozenset(potentialDict["parameters"]),
@@ -1103,9 +1106,12 @@ class VirtualSiteTypes(GMSOXMLChild):
             positionDict = {}
             if self.position_expression:
                 positionDict["expression"] = self.position_expression
-            positionDict["parameters"] = virtual_type.children[0].parameters(
-                units
-            )
+            positionDict["parameters"] = list(
+                filter(
+                    lambda item: isinstance(item, VirtualPositionType),
+                    virtual_type.children,
+                )
+            )[0].parameters(units)
             positionDict["independent_variables"] = indep_vars(
                 positionDict["expression"],
                 frozenset(positionDict["parameters"]),
@@ -1139,18 +1145,12 @@ class VirtualSiteTypes(GMSOXMLChild):
         children = []
         for el in root.iterchildren():
             if el.tag == "Potential":
-                children.append(
-                    ParametersUnitDef.load_from_etree(
-                        el.find("ParametersUnitDef")
-                    )
-                )
+                for child in el.iterfind("ParametersUnitDef"):
+                    children.append(ParametersUnitDef.load_from_etree(child))
                 attribs.update({"potential_expression": el.get("expression")})
             elif el.tag == "Position":
-                children.append(
-                    ParametersUnitDef.load_from_etree(
-                        el.find("ParametersUnitDef")
-                    )
-                )
+                for child in el.iterfind("ParametersUnitDef"):
+                    children.append(ParametersUnitDef.load_from_etree(child))
                 attribs.update({"position_expression": el.get("expression")})
             elif el.tag == "VirtualSiteType":
                 virtual_type = VirtualSiteType.load_from_etree(el)
