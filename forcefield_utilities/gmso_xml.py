@@ -996,38 +996,35 @@ class VirtualSiteType(GMSOXMLTag):
         None, description="The charge of the atom type", alias="charge"
     )
 
-    # virtual_position: Optional[GMSOVirtualPositionType] = Field(
-    #     default=None,
-    #     description="virtual type for a virtual site.",
-    #     alias="virtual_position",
-    # )
+    virtual_position: Optional[VirtualPositionType] = Field(
+        default=None,
+        description="virtual type for a virtual site.",
+        alias="virtual_position",
+    )
 
-    # virtual_potential: Optional[GMSOVirtualPotentialType] = Field(
-    #     default=None,
-    #     description="virtual type for a virtual site.",
-    #     alias="virtual_potential",
-    # )
+    virtual_potential: Optional[VirtualPotentialType] = Field(
+        default=None,
+        description="virtual type for a virtual site.",
+        alias="virtual_potential",
+    )
 
     doi: Optional[str] = Field(
         None, description="The doi of this atomtype", alias="doi"
     )
 
-    children: List[Union[VirtualPotentialType, VirtualPositionType]] = Field(
-        ..., description="Children of this virtual types tag", alias="children"
-    )
-
-    @classmethod  # TODO: change to not load parameters, but virtualpotential/positiontypes instead
+    @classmethod
     def load_from_etree(cls, root):
-        children = []
-        # attribs = pad_with_wildcards(root.attrib, 3)
         attribs = get_virtual_ntype_or_nclass_attribs(root.attrib)
-        # attribs = root.attrib
         for el in root.iterchildren():
             if el.tag == "Potential":
-                children.append(VirtualPotentialType.load_from_etree(el))
+                attribs["virtual_potential"] = (
+                    VirtualPotentialType.load_from_etree(el)
+                )
             elif el.tag == "Position":
-                children.append(VirtualPositionType.load_from_etree(el))
-        return cls(children=children, **attribs)
+                attribs["virtual_position"] = (
+                    VirtualPositionType.load_from_etree(el)
+                )
+        return cls(**attribs)
 
 
 class VirtualSiteTypes(GMSOXMLChild):
@@ -1038,12 +1035,10 @@ class VirtualSiteTypes(GMSOXMLChild):
     potential_expression: str = Field(
         ..., description="The expression for this angle types group"
     )
+
     position_expression: str = Field(
         ..., description="The expression for this angle types group"
     )
-
-    # potential: VirtualPositionType = Field(...,decription="potential")
-    # position: VirtualPotentialType = Field(...,decription="position")
 
     children: List[Union[VirtualSiteType, ParametersUnitDef]] = Field(
         ..., description="Children of this virtual types tag", alias="children"
@@ -1068,6 +1063,8 @@ class VirtualSiteTypes(GMSOXMLChild):
                     "children",
                     "member_types",
                     "member_classes",
+                    "virtual_potential",
+                    "virtual_position",
                 },
                 exclude_none=True,
             )
@@ -1079,22 +1076,13 @@ class VirtualSiteTypes(GMSOXMLChild):
                     virtual_type.member_classes
                 )
 
-            # set potential values
-            # name="VirtualPositionType",
-            # expression=None,
-            # parameters=None,
-            # independent_variables=None,
-            # potential_expression=None,
-            # tags=None,
             potentialDict = {}
             if self.potential_expression:
                 potentialDict["expression"] = self.potential_expression
-            potentialDict["parameters"] = list(
-                filter(
-                    lambda item: isinstance(item, VirtualPotentialType),
-                    virtual_type.children,
+            if virtual_type.virtual_potential:
+                potentialDict["parameters"] = (
+                    virtual_type.virtual_potential.parameters(units)
                 )
-            )[0].parameters(units)
             potentialDict["independent_variables"] = indep_vars(
                 potentialDict["expression"],
                 frozenset(potentialDict["parameters"]),
@@ -1106,12 +1094,10 @@ class VirtualSiteTypes(GMSOXMLChild):
             positionDict = {}
             if self.position_expression:
                 positionDict["expression"] = self.position_expression
-            positionDict["parameters"] = list(
-                filter(
-                    lambda item: isinstance(item, VirtualPositionType),
-                    virtual_type.children,
+            if virtual_type.virtual_position:
+                positionDict["parameters"] = (
+                    virtual_type.virtual_position.parameters(units)
                 )
-            )[0].parameters(units)
             positionDict["independent_variables"] = indep_vars(
                 positionDict["expression"],
                 frozenset(positionDict["parameters"]),
@@ -1119,14 +1105,6 @@ class VirtualSiteTypes(GMSOXMLChild):
             virtual_type_dict["virtual_position"] = GMSOVirtualPositionType(
                 **positionDict
             )
-
-            ############################
-            # virtual_type_dict["parameters"] = virtual_type.parameters(units)
-            # virtual_type_dict["independent_variables"] = indep_vars(
-            #     virtual_type_dict["expression"],
-            #     frozenset(virtual_type_dict["parameters"]),
-            # )
-            ############################
             gmso_virtual_type = GMSOVirtualType(**virtual_type_dict)
             if gmso_virtual_type.member_types:
                 potentials["virtual_types"][
