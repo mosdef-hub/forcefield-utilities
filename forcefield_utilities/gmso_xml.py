@@ -943,7 +943,9 @@ class PairPotentialTypes(GMSOXMLChild):
 
 class VirtualPotentialType(GMSOXMLTag):
     children: List[Parameters] = Field(
-        ..., description="The parameters and their values", alias="children"
+        ...,
+        description="The unyt parameters and their values",
+        alias="children",
     )
 
     @classmethod
@@ -957,7 +959,9 @@ class VirtualPotentialType(GMSOXMLTag):
 
 class VirtualPositionType(GMSOXMLTag):
     children: List[Parameters] = Field(
-        ..., description="The parameters and their values", alias="children"
+        ...,
+        description="The unyt parameters and their values",
+        alias="children",
     )
 
     @classmethod
@@ -993,23 +997,23 @@ class VirtualSiteType(GMSOXMLTag):
     )
 
     charge: Optional[float] = Field(
-        None, description="The charge of the atom type", alias="charge"
-    )
-
-    virtual_position: Optional[VirtualPositionType] = Field(
-        default=None,
-        description="virtual type for a virtual site.",
-        alias="virtual_position",
+        None, description="The charge of the virtual type", alias="charge"
     )
 
     virtual_potential: Optional[VirtualPotentialType] = Field(
         default=None,
-        description="virtual type for a virtual site.",
+        description="virtual type defining the interaction energy for a virtual site",
         alias="virtual_potential",
     )
 
+    virtual_position: Optional[VirtualPositionType] = Field(
+        default=None,
+        description="virtual type defining the position for a virtual site",
+        alias="virtual_position",
+    )
+
     doi: Optional[str] = Field(
-        None, description="The doi of this atomtype", alias="doi"
+        None, description="The doi of this virtual type", alias="doi"
     )
 
     @classmethod
@@ -1029,15 +1033,16 @@ class VirtualSiteType(GMSOXMLTag):
 
 class VirtualSiteTypes(GMSOXMLChild):
     name: Optional[str] = Field(
-        None, description="The name for this angle types group", alias="name"
+        None, description="The name for this virtual types group", alias="name"
     )
 
     potential_expression: str = Field(
-        ..., description="The expression for this angle types group"
+        ..., description="The general expression for the potential energy"
     )
 
     position_expression: str = Field(
-        ..., description="The expression for this angle types group"
+        ...,
+        description="The general expression for calculating the position of the virtual site from its parent sites",
     )
 
     children: List[Union[VirtualSiteType, ParametersUnitDef]] = Field(
