@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Set, Tuple, Union
 
 import numpy as np
 import sympy
@@ -13,13 +13,24 @@ from gmso.core.improper_type import ImproperType as GMSOImproperType
 from gmso.core.pairpotential_type import (
     PairPotentialType as GMSOPairPotentialType,
 )
+from gmso.core.virtual_type import (
+    VirtualPositionType as GMSOVirtualPositionType,
+)
+from gmso.core.virtual_type import (
+    VirtualPotentialType as GMSOVirtualPotentialType,
+)
+from gmso.core.virtual_type import VirtualType as GMSOVirtualType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from gmso.utils.ff_utils import _get_member_classes, _get_member_types
 from pydantic import BaseModel, ConfigDict, Field
 
 # TODO: add custom unyt registry
 from unyt import Unit, UnitRegistry
 
-from forcefield_utilities.utils import pad_with_wildcards
+from forcefield_utilities.utils import (
+    get_virtual_ntype_or_nclass_attribs,
+    pad_with_wildcards,
+)
 
 reg = UnitRegistry()
 charge_dim = u.dimensions.current_mks * u.dimensions.time
@@ -930,6 +941,212 @@ class PairPotentialTypes(GMSOXMLChild):
         return potentials
 
 
+class VirtualPotentialType(GMSOXMLTag):
+    children: List[Parameters] = Field(
+        ...,
+        description="The unyt parameters and their values",
+        alias="children",
+    )
+
+    @classmethod
+    def load_from_etree(cls, root):
+        attribs = pad_with_wildcards(root.attrib, 2)
+        children = []
+        for el in root.iterchildren():
+            children.append(Parameters.load_from_etree(el))
+        return cls(children=children, **attribs)
+
+
+class VirtualPositionType(GMSOXMLTag):
+    children: List[Parameters] = Field(
+        ...,
+        description="The unyt parameters and their values",
+        alias="children",
+    )
+
+    @classmethod
+    def load_from_etree(cls, root):
+        attribs = pad_with_wildcards(root.attrib, 2)
+        children = []
+        for el in root.iterchildren():
+            children.append(Parameters.load_from_etree(el))
+        return cls(children=children, **attribs)
+
+
+class VirtualSiteType(GMSOXMLTag):
+    name: str = Field(
+        None, description="The name of the virtual site type", alias="name"
+    )
+
+    member_types: Optional[Tuple[str, ...]] = Field(
+        None,
+        description="List-like of gmso.AtomType.name "
+        "defining the members of this angle type",
+        alias="member_types",
+        min_length=0,
+        max_length=12,
+    )
+
+    member_classes: Optional[Tuple[str, ...]] = Field(
+        None,
+        description="List-like of gmso.AtomType.atomclass "
+        "defining the members of this angle type",
+        alias="member_classes",
+        min_length=0,
+        max_length=12,
+    )
+
+    charge: Optional[float] = Field(
+        None, description="The charge of the virtual type", alias="charge"
+    )
+
+    virtual_potential: Optional[VirtualPotentialType] = Field(
+        default=None,
+        description="virtual type defining the interaction energy for a virtual site",
+        alias="virtual_potential",
+    )
+
+    virtual_position: Optional[VirtualPositionType] = Field(
+        default=None,
+        description="virtual type defining the position for a virtual site",
+        alias="virtual_position",
+    )
+
+    doi: Optional[str] = Field(
+        None, description="The doi of this virtual type", alias="doi"
+    )
+
+    @classmethod
+    def load_from_etree(cls, root):
+        attribs = get_virtual_ntype_or_nclass_attribs(root.attrib)
+        for el in root.iterchildren():
+            if el.tag == "Potential":
+                attribs["virtual_potential"] = (
+                    VirtualPotentialType.load_from_etree(el)
+                )
+            elif el.tag == "Position":
+                attribs["virtual_position"] = (
+                    VirtualPositionType.load_from_etree(el)
+                )
+        return cls(**attribs)
+
+
+class VirtualSiteTypes(GMSOXMLChild):
+    name: Optional[str] = Field(
+        None, description="The name for this virtual types group", alias="name"
+    )
+
+    potential_expression: str = Field(
+        ..., description="The general expression for the potential energy"
+    )
+
+    position_expression: str = Field(
+        ...,
+        description="The general expression for calculating the position of the virtual site from its parent sites",
+    )
+
+    children: List[Union[VirtualSiteType, ParametersUnitDef]] = Field(
+        ..., description="Children of this virtual types tag", alias="children"
+    )
+
+    def to_gmso_potentials(self, default_units):
+        potentials = {"virtual_types": {}}
+        parameters_units = filter(
+            lambda c: isinstance(c, ParametersUnitDef), self.children
+        )
+        units = {
+            parameter_unit.parameter: u.Unit(parameter_unit.unit)
+            for parameter_unit in parameters_units
+        }
+
+        for virtual_type in filter(
+            lambda c: isinstance(c, VirtualSiteType), self.children
+        ):
+            virtual_type_dict = virtual_type.model_dump(
+                by_alias=True,
+                exclude={
+                    "children",
+                    "member_types",
+                    "member_classes",
+                    "virtual_potential",
+                    "virtual_position",
+                },
+                exclude_none=True,
+            )
+            if virtual_type.member_types:
+                virtual_type_dict["member_types"] = virtual_type.member_types
+
+            elif virtual_type.member_classes:
+                virtual_type_dict["member_classes"] = (
+                    virtual_type.member_classes
+                )
+
+            potentialDict = {}
+            if self.potential_expression:
+                potentialDict["expression"] = self.potential_expression
+            if virtual_type.virtual_potential:
+                potentialDict["parameters"] = (
+                    virtual_type.virtual_potential.parameters(units)
+                )
+            potentialDict["independent_variables"] = indep_vars(
+                potentialDict["expression"],
+                frozenset(potentialDict["parameters"]),
+            )
+            virtual_type_dict["virtual_potential"] = GMSOVirtualPotentialType(
+                **potentialDict
+            )
+
+            positionDict = {}
+            if self.position_expression:
+                positionDict["expression"] = self.position_expression
+            if virtual_type.virtual_position:
+                positionDict["parameters"] = (
+                    virtual_type.virtual_position.parameters(units)
+                )
+            positionDict["independent_variables"] = indep_vars(
+                positionDict["expression"],
+                frozenset(positionDict["parameters"]),
+            )
+            virtual_type_dict["virtual_position"] = GMSOVirtualPositionType(
+                **positionDict
+            )
+            gmso_virtual_type = GMSOVirtualType(**virtual_type_dict)
+            if gmso_virtual_type.member_types:
+                potentials["virtual_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_virtual_type.member_types)
+                ] = gmso_virtual_type
+            else:
+                potentials["virtual_types"][
+                    FF_TOKENS_SEPARATOR.join(gmso_virtual_type.member_classes)
+                ] = gmso_virtual_type
+
+        return potentials
+
+    @classmethod
+    def load_from_etree(cls, root, existing):
+        attribs = root.attrib
+        children = []
+        for el in root.iterchildren():
+            if el.tag == "Potential":
+                for child in el.iterfind("ParametersUnitDef"):
+                    children.append(ParametersUnitDef.load_from_etree(child))
+                attribs.update({"potential_expression": el.get("expression")})
+            elif el.tag == "Position":
+                for child in el.iterfind("ParametersUnitDef"):
+                    children.append(ParametersUnitDef.load_from_etree(child))
+                attribs.update({"position_expression": el.get("expression")})
+            elif el.tag == "VirtualSiteType":
+                virtual_type = VirtualSiteType.load_from_etree(el)
+                member_types = _get_member_types(el)
+                member_classes = _get_member_classes(el)
+                identifier = tuple(
+                    member_types if member_types else member_classes
+                )
+                register_identifiers(existing, identifier, "VirtualSiteTypes")
+                children.append(virtual_type)
+        return cls(children=children, **attribs)
+
+
 class Units(GMSOXMLTag):
     energy: Optional[str] = Field(None, alias="energy")
 
@@ -1090,6 +1307,12 @@ class ForceField(GMSOXMLTag):
             elif el.tag == "PairPotentialTypes":
                 children.append(
                     PairPotentialTypes.load_from_etree(
+                        el, identifiers_registry["PairPotentialTypes"]
+                    )
+                )
+            elif el.tag == "VirtualSiteTypes":
+                children.append(
+                    VirtualSiteTypes.load_from_etree(
                         el, identifiers_registry["PairPotentialTypes"]
                     )
                 )

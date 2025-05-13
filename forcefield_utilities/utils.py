@@ -70,3 +70,26 @@ def pad_with_wildcards(input_dictionary, max_len, wildcard="*"):
                 input_dictionary[class_] = wildcard
 
     return input_dictionary
+
+
+def get_virtual_ntype_or_nclass_attribs(inputDict):
+    """Return classes or types for a virtual type, handling variable length elements."""
+    outDict = {"member_classes": [], "member_types": []}
+    classes_n = []  # list to sort order by n at end of classn
+    types_n = []  # list to sort order by n at end of typen
+    for key, val in inputDict.items():
+        if key.startswith("class"):
+            outDict["member_classes"].append(val)
+            classes_n.append(key[5:])  # "class" has 5 letters
+        elif key.startswith("type"):
+            outDict["member_types"].append(val)
+            types_n.append(key[4:])  # "type" has 4 letters
+        else:
+            outDict[key] = val
+    outDict["member_classes"] = [
+        x for _, x in sorted(zip(classes_n, outDict["member_classes"]))
+    ]  # sort classes
+    outDict["member_types"] = [
+        x for _, x in sorted(zip(types_n, outDict["member_types"]))
+    ]  # sort types
+    return outDict

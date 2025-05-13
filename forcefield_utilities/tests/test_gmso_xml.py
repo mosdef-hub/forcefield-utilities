@@ -261,6 +261,17 @@ class TestListParameters(BaseTest):
         )
 
 
+class TestVirtualSites(BaseTest):
+    @pytest.fixture(scope="session")
+    def ff_example_one(self):
+        example_one = get_path("ff-example0.xml")
+        return GMSOFFs().load(example_one).to_gmso_ff()
+
+    def test_virtual_type_params(self, ff_example_one):
+
+        assert ff_example_one.virtual_types
+
+
 class TestDuplicateEntries:
     def test_value_error_bond_types(self):
         with pytest.raises(ValueError):
@@ -299,3 +310,68 @@ class TestDuplicateEntries:
                     "propanol_Mie_ua_duplicate_entries_improper_type.xml"
                 )
             )
+
+
+class TestGMSOFFTIP4P:
+    @pytest.fixture(scope="session")
+    def tip4p_gmso(self):
+        xml_loc = get_test_file_path("tip4p_2005.xml")
+        return GMSOFFs().load(xml_loc).to_gmso_ff()
+
+    def test_atom_types(self, tip4p_gmso):
+        assert "OW" in tip4p_gmso.atom_types
+
+    def test_bond_types(self, tip4p_gmso):
+        assert "OW~HW" in tip4p_gmso.bond_types
+
+    def test_angle_types(self, tip4p_gmso):
+        assert "HW~OW~HW" in tip4p_gmso.angle_types
+
+    def test_dihedral_types(self, tip4p_gmso):
+        assert not tip4p_gmso.dihedral_types
+
+    def test_virtual_types(self, tip4p_gmso):
+        assert "opls_112~opls_111~opls_112" in tip4p_gmso.virtual_types
+        assert tip4p_gmso.virtual_types[
+            "opls_112~opls_111~opls_112"
+        ].virtual_potential.expression == sympify(
+            "4*epsilon*(-sigma**6/r**6 + sigma**12/r**12)"
+        )
+        assert (
+            tip4p_gmso.virtual_types[
+                "opls_112~opls_111~opls_112"
+            ].virtual_potential.parameters["epsilon"]
+            == 0.0 * u.kJ / u.mol
+        )
+        assert (
+            tip4p_gmso.virtual_types[
+                "opls_112~opls_111~opls_112"
+            ].virtual_potential.parameters["sigma"]
+            == 0.0 * u.nm
+        )
+        assert tip4p_gmso.virtual_types[
+            "opls_112~opls_111~opls_112"
+        ].virtual_position.expression == sympify(
+            "ri + b*(rj-ri+a*(rk-rj))/norm(rj-ri+a*(rk-rj))"
+        )
+        assert (
+            tip4p_gmso.virtual_types[
+                "opls_112~opls_111~opls_112"
+            ].virtual_position.parameters["a"]
+            == 0.5 * u.dimensionless
+        )
+        assert (
+            tip4p_gmso.virtual_types[
+                "opls_112~opls_111~opls_112"
+            ].virtual_position.parameters["b"]
+            == 0.15 * u.dimensionless
+        )
+
+    def test_metadata(self, tip4p_gmso):
+        assert tip4p_gmso.name == "TIP4P 2005 water"
+        assert tip4p_gmso.version == "0.0.1"
+        scaling_factors = {
+            "electrostatics14Scale": 0.5,
+            "nonBonded14Scale": 0.5,
+        }
+        assert scaling_factors == tip4p_gmso.scaling_factors
