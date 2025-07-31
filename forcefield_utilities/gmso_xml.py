@@ -144,7 +144,7 @@ class Parameter(GMSOXMLTag):
         ..., description="The name of the parameter", alias="name"
     )
 
-    value: Union[float, np.ndarray] = Field(
+    value: Union[np.ndarray, float] = Field(
         ..., description="The value of the parameter", alias="value"
     )
 
