@@ -9,9 +9,9 @@ def call_on_import(func):
 
 def get_package_file_path(from_package, relative_path):
     """Use source of a python package to locate and cache the address of a file."""
-    import importlib_resources
+    from importlib.resources import files
 
-    return str(importlib_resources.files(from_package) / relative_path)
+    return str(files(from_package) / relative_path)
 
 
 def deprecate_kwargs(deprecated_kwargs=None):
