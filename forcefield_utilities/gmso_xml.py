@@ -93,11 +93,13 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
         or for_type == "DihedralTypes"
         or for_type == "PairPotentialTypes"
     ):
-        registry.add(identifier)
         if isinstance(identifier, str):
+            registry.add(identifier)
             registry.add(reverse_identifier(identifier))
-        else:  # TODO: Remove if we remove tuple identifiers
-            registry.add(tuple(reversed(identifier)))
+        else:
+            identifierStr = "".join(identifier)
+            registry.add(identifierStr)
+            registry.add(reverse_identifier(identifierStr))
     elif for_type == "ImproperTypes":
         if isinstance(identifier, str):
             (central, second, third, fourth) = re.split(
@@ -114,7 +116,8 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
             (central, fourth, third, second),
         ]
         for mirror in mirrors:
-            registry.add(mirror)
+            mirrorStr = "".join(mirror)
+            registry.add(mirrorStr)
 
 
 @lru_cache(maxsize=128)
@@ -694,9 +697,9 @@ class AngleTypes(GMSOXMLChild):
                 elif angle_type.class1:
                     identifier = f"{angle_type.class1}~"
                 if angle_type.type2:
-                    identifier += angle_type.type2
+                    identifier += angle_type.type2 + "~"
                 elif angle_type.class2:
-                    identifier += angle_type.class2
+                    identifier += angle_type.class2 + "~"
                 if angle_type.type3:
                     identifier += angle_type.type3
                 elif angle_type.class3:
@@ -842,6 +845,7 @@ class TorsionTypes(GMSOXMLChild):
             if "expression" not in torsion_dict:
                 torsion_dict["expression"] = self.expression
 
+            identifier = None
             if (
                 torsion_type.type1
                 and torsion_type.type2
@@ -907,7 +911,7 @@ class TorsionTypes(GMSOXMLChild):
 
             if identifier:
                 potentials[key][identifier] = gmso_torsion_type
-            if gmso_torsion_type.member_types:
+            elif gmso_torsion_type.member_types:
                 potentials[key][
                     FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_types)
                 ] = gmso_torsion_type
@@ -940,13 +944,13 @@ class TorsionTypes(GMSOXMLChild):
                 elif tor_type.class1:
                     identifier = f"{tor_type.class1}~"
                 if tor_type.type2:
-                    identifier += tor_type.type2
+                    identifier += tor_type.type2 + "~"
                 elif tor_type.class2:
-                    identifier += tor_type.class2
+                    identifier += tor_type.class2 + "~"
                 if tor_type.type3:
-                    identifier += tor_type.type3
+                    identifier += tor_type.type3 + "~"
                 elif tor_type.class3:
-                    identifier += tor_type.class3
+                    identifier += tor_type.class3 + "~"
                 if tor_type.type4:
                     identifier += tor_type.type4
                 elif tor_type.class4:
