@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from typing import List, Optional, Set, Tuple, Union
 
@@ -62,6 +63,22 @@ def get_identifiers_registry():
     }
 
 
+def reverse_identifier(identifier: str):
+    bond_tokens = ["~", "-", "=", "#"]
+    outStr = ""
+    currentNode = ""
+    for letter in identifier[::-1]:
+        if letter in bond_tokens:
+            outStr += currentNode[::-1]
+            currentNode = ""
+            outStr += letter  # should be a bond
+        else:
+            currentNode += letter
+    if currentNode:
+        outStr += currentNode[::-1]
+    return outStr
+
+
 def register_identifiers(registry, identifier, for_type="AtomTypes"):
     if identifier in registry:
         raise ValueError(
@@ -77,9 +94,17 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
         or for_type == "PairPotentialTypes"
     ):
         registry.add(identifier)
-        registry.add(tuple(reversed(identifier)))
+        if isinstance(identifier, str):
+            registry.add(reverse_identifier(identifier))
+        else:  # TODO: Remove if we remove tuple identifiers
+            registry.add(tuple(reversed(identifier)))
     elif for_type == "ImproperTypes":
-        (central, second, third, fourth) = identifier
+        if isinstance(identifier, str):
+            (central, second, third, fourth) = re.split(
+                "(?=[\~\-\=\#])", identifier
+            )
+        else:  # identifier is a tuple
+            (central, second, third, fourth) = identifier
         mirrors = [
             (central, second, third, fourth),
             (central, second, fourth, third),
@@ -343,12 +368,24 @@ class BondType(GMSOXMLTag):
         None, description="Class 2 for this bond type", alias="class2"
     )
 
+    classes: Optional[str] = Field(
+        None,
+        description="String for both classes in this bond type",
+        alias="classes",
+    )
+
     type1: Optional[str] = Field(
         None, description="Type 1 for this bond type", alias="type1"
     )
 
     type2: Optional[str] = Field(
         None, description="Type 2 for this bond type", alias="type2"
+    )
+
+    types: Optional[str] = Field(
+        None,
+        description="String for both types in this bond type",
+        alias="types",
     )
 
     children: List[Parameters] = Field(
@@ -393,13 +430,22 @@ class BondTypes(GMSOXMLChild):
         ):
             bond_type_dict = bond_type.model_dump(
                 by_alias=True,
-                exclude={"children", "type1", "type2", "class1", "class2"},
+                exclude={
+                    "children",
+                    "type1",
+                    "type2",
+                    "class1",
+                    "class2",
+                    "types",
+                    "classes",
+                },
                 exclude_none=True,
             )
 
             if "expression" not in bond_type_dict:
                 bond_type_dict["expression"] = self.expression
 
+            identifier = None
             if bond_type.type1 and bond_type.type2:
                 bond_type_dict["member_types"] = (
                     bond_type.type1,
@@ -411,6 +457,21 @@ class BondTypes(GMSOXMLChild):
                     bond_type.class1,
                     bond_type.class2,
                 )
+            elif bond_type.types:
+                type1, type2 = re.split(r"[\~\-\=\#]+", bond_type.types)
+                bond_type_dict["member_types"] = (
+                    type1,
+                    type2,
+                )
+                identifier = bond_type.types
+
+            elif bond_type.classes:
+                class1, class2 = re.split(r"[\~\-\=\#]+", bond_type.classes)
+                bond_type_dict["member_classes"] = (
+                    class1,
+                    class2,
+                )
+                identifier = bond_type.classes
 
             bond_type_dict["parameters"] = bond_type.parameters(units)
             bond_type_dict["independent_variables"] = indep_vars(
@@ -419,7 +480,10 @@ class BondTypes(GMSOXMLChild):
             )
 
             gmso_bond_type = GMSOBondType(**bond_type_dict)
-            if gmso_bond_type.member_types:
+            if identifier:
+                potentials["bond_types"][identifier] = gmso_bond_type
+
+            elif gmso_bond_type.member_types:  # create wildcard identifier
                 potentials["bond_types"][
                     FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_types)
                 ] = gmso_bond_type
@@ -439,11 +503,18 @@ class BondTypes(GMSOXMLChild):
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "BondType":
                 bond_type = BondType.load_from_etree(el)
-                identifier = tuple(
-                    [bond_type.class1, bond_type.class2]
-                    if bond_type.class1
-                    else [bond_type.type1, bond_type.type2]
-                )
+                if bond_type.types:
+                    identifier = bond_type.types
+                elif bond_type.classes:
+                    identifier = bond_type.classes
+                elif bond_type.type1:
+                    identifier = f"{bond_type.type1}~"
+                elif bond_type.class1:
+                    identifier = f"{bond_type.class1}~"
+                if bond_type.type2:
+                    identifier += bond_type.type2
+                elif bond_type.class2:
+                    identifier += bond_type.class2
                 register_identifiers(existing, identifier, "BondTypes")
                 children.append(bond_type)
 
@@ -467,6 +538,12 @@ class AngleType(GMSOXMLTag):
         None, description="Class 3 for this angle type", alias="class3"
     )
 
+    classes: Optional[str] = Field(
+        None,
+        description="String for all classes in this angle type",
+        alias="classes",
+    )
+
     type1: Optional[str] = Field(
         None, description="Type 1 for this angle type", alias="type1"
     )
@@ -477,6 +554,12 @@ class AngleType(GMSOXMLTag):
 
     type3: Optional[str] = Field(
         None, description="Type 3 for this angle type", alias="type3"
+    )
+
+    types: Optional[str] = Field(
+        None,
+        description="String for all types in this Dihedral/Improper type",
+        alias="types",
     )
 
     children: List[Parameters] = Field(
@@ -529,6 +612,8 @@ class AngleTypes(GMSOXMLChild):
                     "class1",
                     "class2",
                     "class3",
+                    "types",
+                    "classes",
                 },
                 exclude_none=True,
             )
@@ -536,6 +621,7 @@ class AngleTypes(GMSOXMLChild):
             if "expression" not in angle_type_dict:
                 angle_type_dict["expression"] = self.expression
 
+            identifier = None
             if angle_type.type1 and angle_type.type2 and angle_type.type3:
                 angle_type_dict["member_types"] = (
                     angle_type.type1,
@@ -549,6 +635,27 @@ class AngleTypes(GMSOXMLChild):
                     angle_type.class2,
                     angle_type.class3,
                 )
+            elif angle_type.types:
+                # TODO: Set bond orders
+                type1, type2, type3 = re.split(r"[\~\-\=\#]+", angle_type.types)
+                angle_type_dict["member_types"] = (
+                    type1,
+                    type2,
+                    type3,
+                )
+                identifier = angle_type.types
+
+            elif angle_type.classes:
+                # TODO: Set bond orders
+                class1, class2, class3 = re.split(
+                    r"[\~\-\=\#]+", angle_type.classes
+                )
+                angle_type_dict["member_classes"] = (
+                    class1,
+                    class2,
+                    class3,
+                )
+                identifier = angle_type.classes
 
             angle_type_dict["parameters"] = angle_type.parameters(units)
             angle_type_dict["independent_variables"] = indep_vars(
@@ -556,7 +663,9 @@ class AngleTypes(GMSOXMLChild):
                 frozenset(angle_type_dict["parameters"]),
             )
             gmso_angle_type = GMSOAngleType(**angle_type_dict)
-            if gmso_angle_type.member_types:
+            if identifier:
+                potentials["angle_types"][identifier] = gmso_angle_type
+            elif gmso_angle_type.member_types:
                 potentials["angle_types"][
                     FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_types)
                 ] = gmso_angle_type
@@ -576,11 +685,22 @@ class AngleTypes(GMSOXMLChild):
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "AngleType":
                 angle_type = AngleType.load_from_etree(el)
-                identifier = tuple(
-                    [angle_type.class1, angle_type.class2, angle_type.class3]
-                    if angle_type.class1
-                    else [angle_type.type1, angle_type.type2, angle_type.type3]
-                )
+                if angle_type.types:
+                    identifier = angle_type.types
+                elif angle_type.classes:
+                    identifier = angle_type.classes
+                elif angle_type.type1:
+                    identifier = f"{angle_type.type1}~"
+                elif angle_type.class1:
+                    identifier = f"{angle_type.class1}~"
+                if angle_type.type2:
+                    identifier += angle_type.type2
+                elif angle_type.class2:
+                    identifier += angle_type.class2
+                if angle_type.type3:
+                    identifier += angle_type.type3
+                elif angle_type.class3:
+                    identifier += angle_type.class3
                 register_identifiers(existing, identifier, "AngleTypes")
                 children.append(angle_type)
         return cls(children=children, **attribs)
@@ -615,6 +735,12 @@ class TorsionType(GMSOXMLTag):
         alias="class4",
     )
 
+    classes: Optional[str] = Field(
+        None,
+        description="String for all classes in this Dihedral/Improper type",
+        alias="classes",
+    )
+
     type1: Optional[str] = Field(
         None,
         description="Type 1 for this Dihedral/Improper type",
@@ -637,6 +763,12 @@ class TorsionType(GMSOXMLTag):
         None,
         description="Type 4 for this Dihedral/Improper type",
         alias="type4",
+    )
+
+    types: Optional[str] = Field(
+        None,
+        description="String for all types in this Dihedral/Improper type",
+        alias="types",
     )
 
     children: List[Parameters] = Field(
@@ -701,6 +833,8 @@ class TorsionTypes(GMSOXMLChild):
                     "class2",
                     "class3",
                     "class4",
+                    "types",
+                    "classes",
                 },
                 exclude_none=True,
             )
@@ -733,6 +867,31 @@ class TorsionTypes(GMSOXMLChild):
                     torsion_type.class3,
                     torsion_type.class4,
                 )
+            elif torsion_type.types:
+                # TODO: Set bond orders
+                type1, type2, type3, type4 = re.split(
+                    r"[\~\-\=\#]+", torsion_type.types
+                )
+                torsion_dict["member_types"] = (
+                    type1,
+                    type2,
+                    type3,
+                    type4,
+                )
+                identifier = torsion_type.types
+
+            elif torsion_type.classes:
+                # TODO: Set bond orders
+                class1, class2, class3, class4 = re.split(
+                    r"[\~\-\=\#]+", torsion_type.classes
+                )
+                torsion_dict["member_classes"] = (
+                    class1,
+                    class2,
+                    class3,
+                    class4,
+                )
+                identifier = torsion_type.classes
 
             torsion_dict["parameters"] = torsion_type.parameters(units)
             torsion_dict["independent_variables"] = indep_vars(
@@ -746,6 +905,8 @@ class TorsionTypes(GMSOXMLChild):
                 gmso_torsion_type = GMSOImproperType(**torsion_dict)
                 key = "improper_types"
 
+            if identifier:
+                potentials[key][identifier] = gmso_torsion_type
             if gmso_torsion_type.member_types:
                 potentials[key][
                     FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_types)
@@ -770,21 +931,26 @@ class TorsionTypes(GMSOXMLChild):
                 children.append(ParametersUnitDef.load_from_etree(el))
             elif el.tag == "DihedralType" or el.tag == "ImproperType":
                 tor_type = child_loaders[el.tag].load_from_etree(el)
-                identifier = tuple(
-                    [
-                        tor_type.class1,
-                        tor_type.class2,
-                        tor_type.class3,
-                        tor_type.class4,
-                    ]
-                    if tor_type.class1
-                    else [
-                        tor_type.type1,
-                        tor_type.type2,
-                        tor_type.type3,
-                        tor_type.type4,
-                    ]
-                )
+                if tor_type.types:
+                    identifier = tor_type.types
+                elif tor_type.classes:
+                    identifier = tor_type.classes
+                elif tor_type.type1:
+                    identifier = f"{tor_type.type1}~"
+                elif tor_type.class1:
+                    identifier = f"{tor_type.class1}~"
+                if tor_type.type2:
+                    identifier += tor_type.type2
+                elif tor_type.class2:
+                    identifier += tor_type.class2
+                if tor_type.type3:
+                    identifier += tor_type.type3
+                elif tor_type.class3:
+                    identifier += tor_type.class3
+                if tor_type.type4:
+                    identifier += tor_type.type4
+                elif tor_type.class4:
+                    identifier += tor_type.class4
                 register_identifiers(
                     (
                         existing_impropers

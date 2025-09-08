@@ -375,3 +375,45 @@ class TestGMSOFFTIP4P:
             "nonBonded14Scale": 0.5,
         }
         assert scaling_factors == tip4p_gmso.scaling_factors
+
+
+class TestBondOrder:
+    @pytest.fixture(scope="session")
+    def bond_order_gmso(self):
+        xml_loc = get_test_file_path("bond-order.xml")
+
+        ff = GMSOFFs().load(xml_loc)
+        return ff.to_gmso_ff()
+
+    def test_atom_types(self, bond_order_gmso):
+        ff = bond_order_gmso
+        assert "C1" in ff.atom_types
+        assert "O1" in ff.atom_types
+        assert "H1" in ff.atom_types
+
+    def test_bond_types(self, bond_order_gmso):
+        ff = bond_order_gmso
+        assert "CX-CX" in ff.bond_types
+        assert "C1=C1" in ff.bond_types
+        assert "CX#CX" in ff.bond_types
+        assert "OX~CX" in ff.bond_types
+        assert "HX~*" in ff.bond_types
+
+    def test_angle_types(self, bond_order_gmso):
+        ff = bond_order_gmso
+        assert "*~C1~*" in ff.angle_types
+        assert "CX-OX-HX" in ff.angle_types
+        assert "CX=CX~*" in ff.angle_types
+        assert "C1#C~*" in ff.angle_types
+        assert "H1~C1~H1" in ff.angle_types
+
+    def test_dihedral_types(self, bond_order_gmso):
+        ff = bond_order_gmso
+        assert "*~C1=C1~*" in ff.dihedral_types
+        assert "*~CX#CX~*" in ff.dihedral_types
+        assert "*~*~*~*" in ff.dihedral_types
+
+    def test_improper_types(self, bond_order_gmso):
+        ff = bond_order_gmso
+        assert "CX=*~*~*" in ff.improper_types
+        assert "*~*~*~*" in ff.improper_types
