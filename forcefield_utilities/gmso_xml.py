@@ -373,7 +373,7 @@ class BondType(GMSOXMLTag):
 
     classes: Optional[str] = Field(
         None,
-        description="String for both classes in this bond type",
+        description="Identifying string for both classes in this bond type, with bond order specified as ~,-,=,#",
         alias="classes",
     )
 
@@ -387,7 +387,7 @@ class BondType(GMSOXMLTag):
 
     types: Optional[str] = Field(
         None,
-        description="String for both types in this bond type",
+        description="Identifying string for both types in this bond type, with bond order specified as ~,-,=,#",
         alias="types",
     )
 
@@ -543,7 +543,7 @@ class AngleType(GMSOXMLTag):
 
     classes: Optional[str] = Field(
         None,
-        description="String for all classes in this angle type",
+        description="Identifying string for all classes in this angle type, with bond order specified as ~,-,=,#",
         alias="classes",
     )
 
@@ -561,7 +561,7 @@ class AngleType(GMSOXMLTag):
 
     types: Optional[str] = Field(
         None,
-        description="String for all types in this Dihedral/Improper type",
+        description="Identifying string for all types in this angle type, with bond order specified as ~,-,=,#",
         alias="types",
     )
 
@@ -740,7 +740,7 @@ class TorsionType(GMSOXMLTag):
 
     classes: Optional[str] = Field(
         None,
-        description="String for all classes in this Dihedral/Improper type",
+        description="Identifying string for all classes in this torsion type, with bond order specified as ~,-,=,#",
         alias="classes",
     )
 
@@ -770,7 +770,7 @@ class TorsionType(GMSOXMLTag):
 
     types: Optional[str] = Field(
         None,
-        description="String for all types in this Dihedral/Improper type",
+        description="Identifying string for all types in this torsion type, with bond order specified as ~,-,=,#",
         alias="types",
     )
 
