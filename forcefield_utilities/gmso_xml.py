@@ -469,7 +469,7 @@ class BondTypes(GMSOXMLChild):
                 identifier = bond_type.types
 
             elif bond_type.classes:
-                class1, class2 = re.split(r"[\~\-\=\#]+", bond_type.classes)
+                class1, class2 = re.split(r"[\~\-\=\#\:]+", bond_type.classes)
                 bond_type_dict["member_classes"] = (
                     class1,
                     class2,
@@ -887,7 +887,7 @@ class TorsionTypes(GMSOXMLChild):
             elif torsion_type.classes:
                 # TODO: Set bond orders
                 class1, class2, class3, class4 = re.split(
-                    r"[\~\-\=\#]+", torsion_type.classes
+                    r"[\~\-\=\#\:]+", torsion_type.classes
                 )
                 torsion_dict["member_classes"] = (
                     class1,
