@@ -247,8 +247,8 @@ class TestListParameters(BaseTest):
             [0.0, 0.4169552, -0.05796675, 0.3734553, 0.0, 0.0] * u.kcal / u.mol,
         )
 
-        dih_with_list_wildcards = propanol_ua_mie_list.get_potential(
-            group="dihedral_type", key=["", "CH", "O", "H"]
+        dih_with_list_wildcards, _ = propanol_ua_mie_list.get_potential(
+            group="dihedral_type", key=["*", "CH", "O", "*"]
         )
         params_wildcards_dihedrals = dih_with_list_wildcards.get_parameters()
         assert u.allclose_units(
