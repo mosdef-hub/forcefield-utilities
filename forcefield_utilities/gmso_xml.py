@@ -102,11 +102,11 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
             registry.add(reverse_identifier(identifierStr))
     elif for_type == "ImproperTypes":
         if isinstance(identifier, str):
-            (central, second, third, fourth) = re.split(
+            central, second, third, fourth = re.split(
                 "(?=[\~\-\=\#])", identifier
             )
         else:  # identifier is a tuple
-            (central, second, third, fourth) = identifier
+            central, second, third, fourth = identifier
         mirrors = [
             (central, second, third, fourth),
             (central, second, fourth, third),
