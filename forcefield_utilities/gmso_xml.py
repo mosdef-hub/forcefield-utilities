@@ -453,14 +453,18 @@ class BondTypes(GMSOXMLChild):
                     bond_type.type1,
                     bond_type.type2,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((bond_type.type1, bond_type.type2))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (bond_type.type1, bond_type.type2)
+                )
 
             elif bond_type.class1 and bond_type.class2:
                 bond_type_dict["member_classes"] = (
                     bond_type.class1,
                     bond_type.class2,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((bond_type.class1, bond_type.class2))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (bond_type.class1, bond_type.class2)
+                )
             elif bond_type.types:
                 type1, type2 = re.split(r"[\~\-\=\#]+", bond_type.types)
                 bond_type_dict["member_types"] = (
@@ -483,7 +487,9 @@ class BondTypes(GMSOXMLChild):
                 frozenset(bond_type_dict["parameters"]),
             )
 
-            gmso_bond_type = GMSOBondType(**bond_type_dict, identifier=identifier)
+            gmso_bond_type = GMSOBondType(
+                **bond_type_dict, identifier=identifier
+            )
             potentials["bond_types"][identifier] = gmso_bond_type
 
         return potentials
@@ -621,7 +627,9 @@ class AngleTypes(GMSOXMLChild):
                     angle_type.type2,
                     angle_type.type3,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((angle_type.type1, angle_type.type2, angle_type.type3))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (angle_type.type1, angle_type.type2, angle_type.type3)
+                )
 
             elif angle_type.class1 and angle_type.class2 and angle_type.class3:
                 angle_type_dict["member_classes"] = (
@@ -629,7 +637,9 @@ class AngleTypes(GMSOXMLChild):
                     angle_type.class2,
                     angle_type.class3,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((angle_type.class1, angle_type.class2, angle_type.class3))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (angle_type.class1, angle_type.class2, angle_type.class3)
+                )
             elif angle_type.types:
                 # TODO: Set bond orders
                 type1, type2, type3 = re.split(r"[\~\-\=\#]+", angle_type.types)
@@ -657,7 +667,9 @@ class AngleTypes(GMSOXMLChild):
                 angle_type_dict["expression"],
                 frozenset(angle_type_dict["parameters"]),
             )
-            gmso_angle_type = GMSOAngleType(**angle_type_dict, identifier=identifier)
+            gmso_angle_type = GMSOAngleType(
+                **angle_type_dict, identifier=identifier
+            )
             potentials["angle_types"][identifier] = gmso_angle_type
 
         return potentials
@@ -840,12 +852,14 @@ class TorsionTypes(GMSOXMLChild):
                     torsion_type.type3,
                     torsion_type.type4,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((
-                    torsion_type.type1,
-                    torsion_type.type2,
-                    torsion_type.type3,
-                    torsion_type.type4,
-                ))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (
+                        torsion_type.type1,
+                        torsion_type.type2,
+                        torsion_type.type3,
+                        torsion_type.type4,
+                    )
+                )
 
             elif (
                 torsion_type.class1
@@ -859,12 +873,14 @@ class TorsionTypes(GMSOXMLChild):
                     torsion_type.class3,
                     torsion_type.class4,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((
-                    torsion_type.class1,
-                    torsion_type.class2,
-                    torsion_type.class3,
-                    torsion_type.class4,
-                ))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (
+                        torsion_type.class1,
+                        torsion_type.class2,
+                        torsion_type.class3,
+                        torsion_type.class4,
+                    )
+                )
             elif torsion_type.types:
                 # TODO: Set bond orders
                 type1, type2, type3, type4 = re.split(
@@ -897,10 +913,14 @@ class TorsionTypes(GMSOXMLChild):
                 frozenset(torsion_dict["parameters"]),
             )
             if isinstance(torsion_type, DihedralType):
-                gmso_torsion_type = GMSODihedralType(**torsion_dict, identifier=identifier)
+                gmso_torsion_type = GMSODihedralType(
+                    **torsion_dict, identifier=identifier
+                )
                 potentials["dihedral_types"][identifier] = gmso_torsion_type
             else:
-                gmso_torsion_type = GMSOImproperType(**torsion_dict, identifier=identifier)
+                gmso_torsion_type = GMSOImproperType(
+                    **torsion_dict, identifier=identifier
+                )
                 potentials["improper_types"][identifier] = gmso_torsion_type
 
         return potentials
@@ -1060,15 +1080,18 @@ class PairPotentialTypes(GMSOXMLChild):
                     pairpotential_type.type1,
                     pairpotential_type.type2,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((pairpotential_type.type1, pairpotential_type.type2))
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (pairpotential_type.type1, pairpotential_type.type2)
+                )
 
             elif pairpotential_type.class1 and pairpotential_type.class2:
                 pairpotential_type_dict["member_classes"] = (
                     pairpotential_type.class1,
                     pairpotential_type.class2,
                 )
-                identifier = FF_TOKENS_SEPARATOR.join((pairpotential_type.class1, pairpotential_type.class2))
-
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (pairpotential_type.class1, pairpotential_type.class2)
+                )
 
             pairpotential_type_dict["parameters"] = (
                 pairpotential_type.parameters(units)
@@ -1082,7 +1105,9 @@ class PairPotentialTypes(GMSOXMLChild):
                 **pairpotential_type_dict, identifier=identifier
             )
             if gmso_pairpotential_type.member_types:
-                potentials["pairpotential_types"][identifier] = gmso_pairpotential_type
+                potentials["pairpotential_types"][
+                    identifier
+                ] = gmso_pairpotential_type
 
         return potentials
 
@@ -1227,7 +1252,9 @@ class VirtualSiteTypes(GMSOXMLChild):
                 virtual_type_dict["member_classes"] = (
                     virtual_type.member_classes
                 )
-                identifier = FF_TOKENS_SEPARATOR.join(virtual_type.member_classes)
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    virtual_type.member_classes
+                )
 
             potentialDict = {}
             if self.potential_expression:
@@ -1258,7 +1285,9 @@ class VirtualSiteTypes(GMSOXMLChild):
             virtual_type_dict["virtual_position"] = GMSOVirtualPositionType(
                 **positionDict
             )
-            gmso_virtual_type = GMSOVirtualType(**virtual_type_dict, identifier=identifier)
+            gmso_virtual_type = GMSOVirtualType(
+                **virtual_type_dict, identifier=identifier
+            )
             potentials["virtual_types"][identifier] = gmso_virtual_type
 
         return potentials
