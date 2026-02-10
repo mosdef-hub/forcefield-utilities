@@ -103,7 +103,7 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
     elif for_type == "ImproperTypes":
         if isinstance(identifier, str):
             central, second, third, fourth = re.split(
-                "(?=[\~\-\=\#])", identifier
+                r"(?=[\~\-\=\#])", identifier
             )
         else:  # identifier is a tuple
             central, second, third, fourth = identifier
@@ -448,11 +448,13 @@ class BondTypes(GMSOXMLChild):
             if "expression" not in bond_type_dict:
                 bond_type_dict["expression"] = self.expression
 
-            identifier = None
             if bond_type.type1 and bond_type.type2:
                 bond_type_dict["member_types"] = (
                     bond_type.type1,
                     bond_type.type2,
+                )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (bond_type.type1, bond_type.type2)
                 )
 
             elif bond_type.class1 and bond_type.class2:
@@ -460,8 +462,12 @@ class BondTypes(GMSOXMLChild):
                     bond_type.class1,
                     bond_type.class2,
                 )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (bond_type.class1, bond_type.class2)
+                )
             elif bond_type.types:
-                type1, type2 = re.split(r"[\~\-\=\#]+", bond_type.types)
+                split = re.split(r"[\~\-\=\#]+", bond_type.types)
+                type1, type2 = _parse_bond_identifiers(bond_type.types)
                 bond_type_dict["member_types"] = (
                     type1,
                     type2,
@@ -469,7 +475,7 @@ class BondTypes(GMSOXMLChild):
                 identifier = bond_type.types
 
             elif bond_type.classes:
-                class1, class2 = re.split(r"[\~\-\=\#\:]+", bond_type.classes)
+                class1, class2 = _parse_bond_identifiers(bond_type.classes)
                 bond_type_dict["member_classes"] = (
                     class1,
                     class2,
@@ -482,18 +488,10 @@ class BondTypes(GMSOXMLChild):
                 frozenset(bond_type_dict["parameters"]),
             )
 
-            gmso_bond_type = GMSOBondType(**bond_type_dict)
-            if identifier:
-                potentials["bond_types"][identifier] = gmso_bond_type
-
-            elif gmso_bond_type.member_types:  # create wildcard identifier
-                potentials["bond_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_types)
-                ] = gmso_bond_type
-            else:
-                potentials["bond_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_bond_type.member_classes)
-                ] = gmso_bond_type
+            gmso_bond_type = GMSOBondType(
+                **bond_type_dict, identifier=identifier
+            )
+            potentials["bond_types"][identifier] = gmso_bond_type
 
         return potentials
 
@@ -624,12 +622,14 @@ class AngleTypes(GMSOXMLChild):
             if "expression" not in angle_type_dict:
                 angle_type_dict["expression"] = self.expression
 
-            identifier = None
             if angle_type.type1 and angle_type.type2 and angle_type.type3:
                 angle_type_dict["member_types"] = (
                     angle_type.type1,
                     angle_type.type2,
                     angle_type.type3,
+                )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (angle_type.type1, angle_type.type2, angle_type.type3)
                 )
 
             elif angle_type.class1 and angle_type.class2 and angle_type.class3:
@@ -638,9 +638,13 @@ class AngleTypes(GMSOXMLChild):
                     angle_type.class2,
                     angle_type.class3,
                 )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (angle_type.class1, angle_type.class2, angle_type.class3)
+                )
             elif angle_type.types:
-                # TODO: Set bond orders
-                type1, type2, type3 = re.split(r"[\~\-\=\#]+", angle_type.types)
+                type1, type2, type3 = _parse_angles_identifiers(
+                    angle_type.types
+                )
                 angle_type_dict["member_types"] = (
                     type1,
                     type2,
@@ -649,9 +653,8 @@ class AngleTypes(GMSOXMLChild):
                 identifier = angle_type.types
 
             elif angle_type.classes:
-                # TODO: Set bond orders
-                class1, class2, class3 = re.split(
-                    r"[\~\-\=\#]+", angle_type.classes
+                class1, class2, class3 = _parse_angles_identifiers(
+                    angle_type.classes
                 )
                 angle_type_dict["member_classes"] = (
                     class1,
@@ -665,17 +668,10 @@ class AngleTypes(GMSOXMLChild):
                 angle_type_dict["expression"],
                 frozenset(angle_type_dict["parameters"]),
             )
-            gmso_angle_type = GMSOAngleType(**angle_type_dict)
-            if identifier:
-                potentials["angle_types"][identifier] = gmso_angle_type
-            elif gmso_angle_type.member_types:
-                potentials["angle_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_types)
-                ] = gmso_angle_type
-            else:
-                potentials["angle_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_angle_type.member_classes)
-                ] = gmso_angle_type
+            gmso_angle_type = GMSOAngleType(
+                **angle_type_dict, identifier=identifier
+            )
+            potentials["angle_types"][identifier] = gmso_angle_type
 
         return potentials
 
@@ -845,7 +841,6 @@ class TorsionTypes(GMSOXMLChild):
             if "expression" not in torsion_dict:
                 torsion_dict["expression"] = self.expression
 
-            identifier = None
             if (
                 torsion_type.type1
                 and torsion_type.type2
@@ -857,6 +852,14 @@ class TorsionTypes(GMSOXMLChild):
                     torsion_type.type2,
                     torsion_type.type3,
                     torsion_type.type4,
+                )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (
+                        torsion_type.type1,
+                        torsion_type.type2,
+                        torsion_type.type3,
+                        torsion_type.type4,
+                    )
                 )
 
             elif (
@@ -871,11 +874,24 @@ class TorsionTypes(GMSOXMLChild):
                     torsion_type.class3,
                     torsion_type.class4,
                 )
-            elif torsion_type.types:
-                # TODO: Set bond orders
-                type1, type2, type3, type4 = re.split(
-                    r"[\~\-\=\#]+", torsion_type.types
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (
+                        torsion_type.class1,
+                        torsion_type.class2,
+                        torsion_type.class3,
+                        torsion_type.class4,
+                    )
                 )
+            elif torsion_type.types:
+                # TODO: Regex
+                try:
+                    type1, type2, type3, type4 = re.split(
+                        r"[\~\-\=\#]+", torsion_type.types
+                    )
+                except TypeError:
+                    raise TypeError(
+                        f"{torsion_type.types} includes bond types. Please use type1, type2, type3, type4 instead of types."
+                    )
                 torsion_dict["member_types"] = (
                     type1,
                     type2,
@@ -903,22 +919,15 @@ class TorsionTypes(GMSOXMLChild):
                 frozenset(torsion_dict["parameters"]),
             )
             if isinstance(torsion_type, DihedralType):
-                gmso_torsion_type = GMSODihedralType(**torsion_dict)
-                key = "dihedral_types"
+                gmso_torsion_type = GMSODihedralType(
+                    **torsion_dict, identifier=identifier
+                )
+                potentials["dihedral_types"][identifier] = gmso_torsion_type
             else:
-                gmso_torsion_type = GMSOImproperType(**torsion_dict)
-                key = "improper_types"
-
-            if identifier:
-                potentials[key][identifier] = gmso_torsion_type
-            elif gmso_torsion_type.member_types:
-                potentials[key][
-                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_types)
-                ] = gmso_torsion_type
-            else:
-                potentials[key][
-                    FF_TOKENS_SEPARATOR.join(gmso_torsion_type.member_classes)
-                ] = gmso_torsion_type
+                gmso_torsion_type = GMSOImproperType(
+                    **torsion_dict, identifier=identifier
+                )
+                potentials["improper_types"][identifier] = gmso_torsion_type
 
         return potentials
 
@@ -1077,11 +1086,17 @@ class PairPotentialTypes(GMSOXMLChild):
                     pairpotential_type.type1,
                     pairpotential_type.type2,
                 )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (pairpotential_type.type1, pairpotential_type.type2)
+                )
 
             elif pairpotential_type.class1 and pairpotential_type.class2:
                 pairpotential_type_dict["member_classes"] = (
                     pairpotential_type.class1,
                     pairpotential_type.class2,
+                )
+                identifier = FF_TOKENS_SEPARATOR.join(
+                    (pairpotential_type.class1, pairpotential_type.class2)
                 )
 
             pairpotential_type_dict["parameters"] = (
@@ -1093,19 +1108,11 @@ class PairPotentialTypes(GMSOXMLChild):
             )
 
             gmso_pairpotential_type = GMSOPairPotentialType(
-                **pairpotential_type_dict
+                **pairpotential_type_dict, identifier=identifier
             )
             if gmso_pairpotential_type.member_types:
                 potentials["pairpotential_types"][
-                    FF_TOKENS_SEPARATOR.join(
-                        gmso_pairpotential_type.member_types
-                    )
-                ] = gmso_pairpotential_type
-            else:
-                potentials["pairpotential_types"][
-                    FF_TOKENS_SEPARATOR.join(
-                        gmso_pairpotential_type.member_classes
-                    )
+                    identifier
                 ] = gmso_pairpotential_type
 
         return potentials
@@ -1245,9 +1252,13 @@ class VirtualSiteTypes(GMSOXMLChild):
             )
             if virtual_type.member_types:
                 virtual_type_dict["member_types"] = virtual_type.member_types
+                identifier = FF_TOKENS_SEPARATOR.join(virtual_type.member_types)
 
             elif virtual_type.member_classes:
                 virtual_type_dict["member_classes"] = (
+                    virtual_type.member_classes
+                )
+                identifier = FF_TOKENS_SEPARATOR.join(
                     virtual_type.member_classes
                 )
 
@@ -1280,15 +1291,10 @@ class VirtualSiteTypes(GMSOXMLChild):
             virtual_type_dict["virtual_position"] = GMSOVirtualPositionType(
                 **positionDict
             )
-            gmso_virtual_type = GMSOVirtualType(**virtual_type_dict)
-            if gmso_virtual_type.member_types:
-                potentials["virtual_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_virtual_type.member_types)
-                ] = gmso_virtual_type
-            else:
-                potentials["virtual_types"][
-                    FF_TOKENS_SEPARATOR.join(gmso_virtual_type.member_classes)
-                ] = gmso_virtual_type
+            gmso_virtual_type = GMSOVirtualType(
+                **virtual_type_dict, identifier=identifier
+            )
+            potentials["virtual_types"][identifier] = gmso_virtual_type
 
         return potentials
 
@@ -1488,3 +1494,86 @@ class ForceField(GMSOXMLTag):
                 )
 
         return cls(children=children, **attribs)
+
+
+def _parse_bond_identifiers(bond_type_classes):
+    """
+    Extract two classes from bond_type string, keeping relevant symbols.
+
+    Rules:
+    - Symbols before first class go with class1
+    - Symbols after second class go with class2
+    - Ambiguous cases (one symbol between classes) raise an error
+    """
+    # Find all non-delimiter sequences
+    matches = list(re.finditer(r"[^\~\-\=\#]+", bond_type_classes))
+
+    if len(matches) != 2:
+        raise AssertionError(
+            f"{bond_type_classes} must contain exactly 2 classes. "
+            f"Found {len(matches)} instead."
+        )
+
+    _, end1 = matches[0].span()
+    start2, _ = matches[1].span()
+
+    # Count delimiters between the two classes
+    delim_count = start2 - end1
+
+    # class1: from start to end of first match
+    class1 = bond_type_classes[:end1]
+
+    # class2: from start of symbols before second class to end
+    class2 = bond_type_classes[
+        start2 - (delim_count if delim_count > 1 else 0) :
+    ]
+
+    return class1, class2
+
+
+def _parse_angles_identifiers(bond_type_angles):
+    """
+    Extract three classes from angle string, keeping relevant symbols.
+
+    Rules:
+    - Leading symbols go with first class
+    - Trailing symbols go with last class
+    - Symbols between classes:
+      * Exactly 1: ambiguous → error
+      * 2+: split evenly between adjacent classes
+    """
+    # Find all non-delimiter sequences (the classes)
+    matches = list(re.finditer(r"[^\~\-\=\#]+", bond_type_angles))
+
+    if len(matches) != 3:
+        raise AssertionError(
+            f"{bond_type_angles} must contain exactly 3 classes. "
+            f"Found {len(matches)} instead."
+        )
+
+    start1, end1 = matches[0].span()
+    start2, end2 = matches[1].span()
+    start3, end3 = matches[2].span()
+
+    # Extract leading symbols for class1
+    class1_prefix = bond_type_angles[:start1]
+
+    # Extract trailing symbols for class3
+    class3_suffix = bond_type_angles[end3:]
+
+    # Split delimiters between classes
+    delim_1_2 = bond_type_angles[end1:start2]
+    delim_2_3 = bond_type_angles[end2:start3]
+
+    class1_suffix = delim_1_2[: len(delim_1_2) // 2]
+    class2_prefix = delim_1_2[len(delim_1_2) // 2 :]
+
+    class2_suffix = delim_2_3[: len(delim_2_3) // 2]
+    class3_prefix = delim_2_3[len(delim_2_3) // 2 :]
+
+    # Build final classes
+    class1 = class1_prefix + bond_type_angles[start1:end1] + class1_suffix
+    class2 = class2_prefix + bond_type_angles[start2:end2] + class2_suffix
+    class3 = class3_prefix + bond_type_angles[start3:end3] + class3_suffix
+
+    return (class1, class2, class3)
