@@ -642,7 +642,9 @@ class AngleTypes(GMSOXMLChild):
                     (angle_type.class1, angle_type.class2, angle_type.class3)
                 )
             elif angle_type.types:
-                type1, type2, type3 = _parse_angles_identifiers(angle_type.types)
+                type1, type2, type3 = _parse_angles_identifiers(
+                    angle_type.types
+                )
                 angle_type_dict["member_types"] = (
                     type1,
                     type2,
@@ -651,7 +653,9 @@ class AngleTypes(GMSOXMLChild):
                 identifier = angle_type.types
 
             elif angle_type.classes:
-                class1, class2, class3 = _parse_angles_identifiers(angle_type.classes)
+                class1, class2, class3 = _parse_angles_identifiers(
+                    angle_type.classes
+                )
                 angle_type_dict["member_classes"] = (
                     class1,
                     class2,
@@ -885,7 +889,9 @@ class TorsionTypes(GMSOXMLChild):
                         r"[\~\-\=\#]+", torsion_type.types
                     )
                 except TypeError:
-                    raise TypeError(f"{torsion_type.types} includes bond types. Please use type1, type2, type3, type4 instead of types.")
+                    raise TypeError(
+                        f"{torsion_type.types} includes bond types. Please use type1, type2, type3, type4 instead of types."
+                    )
                 torsion_dict["member_types"] = (
                     type1,
                     type2,
@@ -1488,11 +1494,12 @@ class ForceField(GMSOXMLTag):
                 )
 
         return cls(children=children, **attribs)
-    
+
+
 def _parse_bond_identifiers(bond_type_classes):
     """
     Extract two classes from bond_type string, keeping relevant symbols.
-    
+
     Rules:
     - Symbols before first class go with class1
     - Symbols after second class go with class2
@@ -1500,31 +1507,34 @@ def _parse_bond_identifiers(bond_type_classes):
     """
     # Find all non-delimiter sequences
     matches = list(re.finditer(r"[^\~\-\=\#]+", bond_type_classes))
-    
+
     if len(matches) != 2:
         raise AssertionError(
             f"{bond_type_classes} must contain exactly 2 classes. "
             f"Found {len(matches)} instead."
         )
-    
+
     _, end1 = matches[0].span()
     start2, _ = matches[1].span()
-    
+
     # Count delimiters between the two classes
     delim_count = start2 - end1
-    
+
     # class1: from start to end of first match
     class1 = bond_type_classes[:end1]
-    
+
     # class2: from start of symbols before second class to end
-    class2 = bond_type_classes[start2 - (delim_count if delim_count > 1 else 0):]
-    
+    class2 = bond_type_classes[
+        start2 - (delim_count if delim_count > 1 else 0) :
+    ]
+
     return class1, class2
+
 
 def _parse_angles_identifiers(bond_type_angles):
     """
     Extract three classes from angle string, keeping relevant symbols.
-    
+
     Rules:
     - Leading symbols go with first class
     - Trailing symbols go with last class
@@ -1534,36 +1544,36 @@ def _parse_angles_identifiers(bond_type_angles):
     """
     # Find all non-delimiter sequences (the classes)
     matches = list(re.finditer(r"[^\~\-\=\#]+", bond_type_angles))
-    
+
     if len(matches) != 3:
         raise AssertionError(
             f"{bond_type_angles} must contain exactly 3 classes. "
             f"Found {len(matches)} instead."
         )
-    
+
     start1, end1 = matches[0].span()
     start2, end2 = matches[1].span()
     start3, end3 = matches[2].span()
-    
+
     # Extract leading symbols for class1
     class1_prefix = bond_type_angles[:start1]
-    
+
     # Extract trailing symbols for class3
     class3_suffix = bond_type_angles[end3:]
-    
+
     # Split delimiters between classes
     delim_1_2 = bond_type_angles[end1:start2]
     delim_2_3 = bond_type_angles[end2:start3]
-    
-    class1_suffix = delim_1_2[:len(delim_1_2)//2]
-    class2_prefix = delim_1_2[len(delim_1_2)//2:]
-    
-    class2_suffix = delim_2_3[:len(delim_2_3)//2]
-    class3_prefix = delim_2_3[len(delim_2_3)//2:]
-    
+
+    class1_suffix = delim_1_2[: len(delim_1_2) // 2]
+    class2_prefix = delim_1_2[len(delim_1_2) // 2 :]
+
+    class2_suffix = delim_2_3[: len(delim_2_3) // 2]
+    class3_prefix = delim_2_3[len(delim_2_3) // 2 :]
+
     # Build final classes
     class1 = class1_prefix + bond_type_angles[start1:end1] + class1_suffix
     class2 = class2_prefix + bond_type_angles[start2:end2] + class2_suffix
     class3 = class3_prefix + bond_type_angles[start3:end3] + class3_suffix
-    
+
     return (class1, class2, class3)
