@@ -260,6 +260,17 @@ class TestListParameters(BaseTest):
             [0.0, 0.69551975, -0.023, 0.3734553, 0.0, 0.0] * u.kcal / u.mol,
         )
 
+    def test_pairpotential_params(self):
+        fn = get_test_file_path("pairpotential.xml")
+        ff = GMSOFFs().load(fn).to_gmso_ff()
+        atom_type = ff.atom_types["_A"]
+        assert atom_type.expression is None
+        pair_type = ff.pairpotential_types["_A~_A"]
+        params = pair_type.get_parameters()
+        assert u.allclose_units(params["A"], 40 * u.N)
+        assert u.allclose_units(params["r_cut"], 1 * u.nm)
+        assert u.allclose_units(params["γ"], 8 * u.amu / u.s)
+
 
 class TestVirtualSites(BaseTest):
     @pytest.fixture(scope="session")

@@ -123,6 +123,8 @@ def register_identifiers(registry, identifier, for_type="AtomTypes"):
 @lru_cache(maxsize=128)
 def indep_vars(expr: str, dependent: frozenset) -> Set:
     """Given an expression and dependent variables, return independent variables for it."""
+    if not expr or expr == "":
+        return None
     dependent_symbols = frozenset(map(lambda x: sympy.symbols(x), dependent))
     return sympy.sympify(expr).free_symbols - dependent_symbols
 
@@ -280,8 +282,8 @@ class AtomTypes(GMSOXMLChild):
         None, description="The name for this atom type group", alias="name"
     )
 
-    expression: str = Field(
-        ...,
+    expression: Optional[str] = Field(
+        None,
         description="The expression for this atom type group",
         alias="expression",
     )
@@ -319,13 +321,15 @@ class AtomTypes(GMSOXMLChild):
 
             if "expression" not in atom_type_dict:
                 atom_type_dict["expression"] = self.expression
-            atom_type_dict["parameters"] = atom_type.parameters(units)
+            if atom_type_dict["expression"] is not None:  # Non Empty Expression
+                if atom_type.children:
+                    atom_type_dict["parameters"] = atom_type.parameters(units)
 
-            if not atom_type_dict.get("independent_variables"):
-                atom_type_dict["independent_variables"] = indep_vars(
-                    atom_type_dict["expression"],
-                    frozenset(atom_type_dict["parameters"]),
-                )
+                if not atom_type_dict.get("independent_variables"):
+                    atom_type_dict["independent_variables"] = indep_vars(
+                        atom_type_dict["expression"],
+                        frozenset(atom_type_dict["parameters"]),
+                    )
 
             if default_units.get("charge") and atom_type_dict.get("charge"):
                 atom_type_dict["charge"] = (
@@ -1265,10 +1269,16 @@ class VirtualSiteTypes(GMSOXMLChild):
             potentialDict = {}
             if self.potential_expression:
                 potentialDict["expression"] = self.potential_expression
-            if virtual_type.virtual_potential:
-                potentialDict["parameters"] = (
-                    virtual_type.virtual_potential.parameters(units)
-                )
+
+            if (
+                virtual_type.virtual_potential
+                and potentialDict["expression"] is not None
+            ):
+                if virtual_type.virtual_potential.children:
+                    potentialDict["parameters"] = (
+                        virtual_type.virtual_potential.parameters(units)
+                    )
+
             potentialDict["independent_variables"] = indep_vars(
                 potentialDict["expression"],
                 frozenset(potentialDict["parameters"]),
@@ -1280,14 +1290,19 @@ class VirtualSiteTypes(GMSOXMLChild):
             positionDict = {}
             if self.position_expression:
                 positionDict["expression"] = self.position_expression
-            if virtual_type.virtual_position:
-                positionDict["parameters"] = (
-                    virtual_type.virtual_position.parameters(units)
+            if (
+                virtual_type.virtual_position
+                and positionDict["expression"] is not None
+            ):
+                if virtual_type.virtual_position.children:
+                    positionDict["parameters"] = (
+                        virtual_type.virtual_position.parameters(units)
+                    )
+
+                positionDict["independent_variables"] = indep_vars(
+                    positionDict["expression"],
+                    frozenset(positionDict["parameters"]),
                 )
-            positionDict["independent_variables"] = indep_vars(
-                positionDict["expression"],
-                frozenset(positionDict["parameters"]),
-            )
             virtual_type_dict["virtual_position"] = GMSOVirtualPositionType(
                 **positionDict
             )
