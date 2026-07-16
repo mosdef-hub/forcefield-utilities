@@ -22,6 +22,7 @@ from gmso.core.virtual_type import (
 )
 from gmso.core.virtual_type import VirtualType as GMSOVirtualType
 from gmso.utils._constants import FF_TOKENS_SEPARATOR
+from gmso.utils.expression import NullPotentialExpression
 from gmso.utils.ff_utils import _get_member_classes, _get_member_types
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -340,6 +341,16 @@ class AtomTypes(GMSOXMLChild):
                 atom_type_dict["mass"] = (
                     atom_type_dict["mass"] * default_units["mass"]
                 )
+            if (
+                atom_type_dict.get("expression") is None
+                and atom_type_dict.get("parameters") is None
+            ):
+                atom_type_dict["potential_expression"] = (
+                    NullPotentialExpression()
+                )
+                atom_type_dict.pop("expression", None)
+                atom_type_dict.pop("parameters", None)
+                atom_type_dict.pop("independent_variables", None)
             gmso_atom_type = GMSOAtomType(**atom_type_dict)
             element = atom_type.element
             if element:
