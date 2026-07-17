@@ -1228,8 +1228,8 @@ class VirtualSiteTypes(GMSOXMLChild):
         None, description="The name for this virtual types group", alias="name"
     )
 
-    potential_expression: str = Field(
-        ..., description="The general expression for the potential energy"
+    potential_expression: Optional[str] = Field(
+        None, description="The general expression for the potential energy"
     )
 
     position_expression: str = Field(
@@ -1290,10 +1290,10 @@ class VirtualSiteTypes(GMSOXMLChild):
                         virtual_type.virtual_potential.parameters(units)
                     )
 
-            potentialDict["independent_variables"] = indep_vars(
-                potentialDict["expression"],
-                frozenset(potentialDict["parameters"]),
-            )
+                potentialDict["independent_variables"] = indep_vars(
+                    potentialDict["expression"],
+                    frozenset(potentialDict["parameters"]),
+                )
             virtual_type_dict["virtual_potential"] = GMSOVirtualPotentialType(
                 **potentialDict
             )
@@ -1330,9 +1330,14 @@ class VirtualSiteTypes(GMSOXMLChild):
         children = []
         for el in root.iterchildren():
             if el.tag == "Potential":
-                for child in el.iterfind("ParametersUnitDef"):
-                    children.append(ParametersUnitDef.load_from_etree(child))
-                attribs.update({"potential_expression": el.get("expression")})
+                if el.get("expression"):
+                    for child in el.iterfind("ParametersUnitDef"):
+                        children.append(
+                            ParametersUnitDef.load_from_etree(child)
+                        )
+                    attribs.update(
+                        {"potential_expression": el.get("expression")}
+                    )
             elif el.tag == "Position":
                 for child in el.iterfind("ParametersUnitDef"):
                     children.append(ParametersUnitDef.load_from_etree(child))
